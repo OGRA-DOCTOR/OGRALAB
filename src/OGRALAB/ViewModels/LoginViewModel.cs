@@ -145,20 +145,40 @@ namespace OGRALAB.ViewModels
                         await _authService.SaveUserSettingsAsync(Username, RememberMe);
                     }
 
-                    // Navigate to main window
+                    // Navigate to main window - FIXED VERSION
                     Application.Current.Dispatcher.Invoke(() =>
                     {
-                        var mainWindow = new MainWindow(user);
-                        mainWindow.Show();
-                        
-                        // Close login window
-                        foreach (Window window in Application.Current.Windows)
+                        try
                         {
-                            if (window is LoginWindow)
+                            System.Diagnostics.Debug.WriteLine($"Creating MainWindow for user: {user.Username}");
+                            
+                            var mainWindow = new MainWindow(user);
+                            
+                            // تعيين النافذة الرئيسية بشكل صحيح - هذا هو الإصلاح الرئيسي
+                            Application.Current.MainWindow = mainWindow;
+                            
+                            System.Diagnostics.Debug.WriteLine("MainWindow assigned to Application.Current.MainWindow");
+                            
+                            mainWindow.Show();
+                            
+                            System.Diagnostics.Debug.WriteLine($"MainWindow.Show() called - IsVisible: {mainWindow.IsVisible}");
+                            
+                            // إغلاق نافذة تسجيل الدخول بعد التأكد من فتح النافذة الرئيسية
+                            var loginWindow = Application.Current.Windows.OfType<LoginWindow>().FirstOrDefault();
+                            if (loginWindow != null)
                             {
-                                window.Close();
-                                break;
+                                System.Diagnostics.Debug.WriteLine("Closing LoginWindow");
+                                loginWindow.Close();
                             }
+                            
+                            System.Diagnostics.Debug.WriteLine($"Navigation completed - Active windows: {Application.Current.Windows.Count}");
+                        }
+                        catch (Exception ex)
+                        {
+                            System.Diagnostics.Debug.WriteLine($"Error in navigation: {ex.Message}");
+                            MessageBox.Show($"Error opening main window: {ex.Message}", "Error", 
+                                           MessageBoxButton.OK, MessageBoxImage.Error);
+                            StatusMessage = "Failed to open main window. Please try again.";
                         }
                     });
                 }
@@ -171,6 +191,7 @@ namespace OGRALAB.ViewModels
             catch (Exception ex)
             {
                 StatusMessage = $"Login failed: {ex.Message}";
+                System.Diagnostics.Debug.WriteLine($"Login exception: {ex}");
             }
             finally
             {
