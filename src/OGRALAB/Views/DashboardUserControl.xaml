@@ -1,0 +1,283 @@
+<UserControl x:Class="OGRALAB.Views.DashboardUserControl"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+             mc:Ignorable="d" 
+             d:DesignHeight="600" d:DesignWidth="800"
+             Background="{StaticResource LightGray}">
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <!-- العنوان الرئيسي -->
+        <Border Grid.Row="0" Background="{StaticResource PrimaryColor}" Padding="20,15">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+                
+                <TextBlock Grid.Column="0" 
+                          Text="📊"
+                          FontSize="28"
+                          VerticalAlignment="Center"
+                          Margin="0,0,15,0"/>
+                
+                <TextBlock Grid.Column="1"
+                          Text="لوحة المعلومات"
+                          FontSize="24" 
+                          FontWeight="Bold"
+                          Foreground="{StaticResource WhiteColor}"
+                          VerticalAlignment="Center"
+                          FlowDirection="RightToLeft"/>
+                
+                <TextBlock Grid.Column="2"
+                          Text="{Binding LastUpdated, StringFormat='آخر تحديث: {0}'}"
+                          FontSize="12"
+                          Foreground="{StaticResource LightBlue}"
+                          VerticalAlignment="Center"
+                          FlowDirection="RightToLeft"/>
+            </Grid>
+        </Border>
+
+        <!-- المحتوى الرئيسي -->
+        <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto" Padding="20">
+            <StackPanel>
+                <!-- بطاقات الإحصائيات الرئيسية -->
+                <Grid Margin="0,0,0,20">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                    </Grid.RowDefinitions>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="*"/>
+                    </Grid.ColumnDefinitions>
+
+                    <!-- بطاقة المرضى المسجلين اليوم -->
+                    <Border Grid.Row="0" Grid.Column="0" 
+                           Background="{StaticResource SupportingColor}"
+                           CornerRadius="8"
+                           Margin="5"
+                           Padding="20,15">
+                        <StackPanel>
+                            <TextBlock Text="👥" 
+                                      FontSize="32" 
+                                      HorizontalAlignment="Center"
+                                      Margin="0,0,0,10"/>
+                            <TextBlock Text="{Binding PatientsRegisteredToday}" 
+                                      FontSize="36" 
+                                      FontWeight="Bold"
+                                      Foreground="{StaticResource WhiteColor}"
+                                      HorizontalAlignment="Center"/>
+                            <TextBlock Text="مرضى مسجلين اليوم" 
+                                      FontSize="14"
+                                      Foreground="{StaticResource WhiteColor}"
+                                      HorizontalAlignment="Center"
+                                      FlowDirection="RightToLeft"
+                                      TextWrapping="Wrap"/>
+                        </StackPanel>
+                    </Border>
+
+                    <!-- بطاقة النتائج المطبوعة -->
+                    <Border Grid.Row="0" Grid.Column="1" 
+                           Background="{StaticResource AccentColor}"
+                           CornerRadius="8"
+                           Margin="5"
+                           Padding="20,15">
+                        <StackPanel>
+                            <TextBlock Text="📄" 
+                                      FontSize="32" 
+                                      HorizontalAlignment="Center"
+                                      Margin="0,0,0,10"/>
+                            <TextBlock Text="{Binding ResultsProcessedToday}" 
+                                      FontSize="36" 
+                                      FontWeight="Bold"
+                                      Foreground="{StaticResource WhiteColor}"
+                                      HorizontalAlignment="Center"/>
+                            <TextBlock Text="نتائج مطبوعة اليوم" 
+                                      FontSize="14"
+                                      Foreground="{StaticResource WhiteColor}"
+                                      HorizontalAlignment="Center"
+                                      FlowDirection="RightToLeft"
+                                      TextWrapping="Wrap"/>
+                        </StackPanel>
+                    </Border>
+
+                    <!-- بطاقة النتائج المعلقة -->
+                    <Border Grid.Row="0" Grid.Column="2" 
+                           Background="{StaticResource SecondaryColor}"
+                           CornerRadius="8"
+                           Margin="5"
+                           Padding="20,15">
+                        <StackPanel>
+                            <TextBlock Text="⏳" 
+                                      FontSize="32" 
+                                      HorizontalAlignment="Center"
+                                      Margin="0,0,0,10"/>
+                            <TextBlock Text="{Binding PendingResults}" 
+                                      FontSize="36" 
+                                      FontWeight="Bold"
+                                      Foreground="{StaticResource WhiteColor}"
+                                      HorizontalAlignment="Center"/>
+                            <TextBlock Text="نتائج غير مطبوعة" 
+                                      FontSize="14"
+                                      Foreground="{StaticResource WhiteColor}"
+                                      HorizontalAlignment="Center"
+                                      FlowDirection="RightToLeft"
+                                      TextWrapping="Wrap"/>
+                        </StackPanel>
+                    </Border>
+                </Grid>
+
+                <!-- إحصائيات إضافية -->
+                <Grid Margin="0,10,0,20">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="*"/>
+                    </Grid.ColumnDefinitions>
+
+                    <!-- إجمالي المرضى هذا الشهر -->
+                    <Border Grid.Column="0" 
+                           Background="{StaticResource ComplementaryColor}"
+                           CornerRadius="8"
+                           Margin="5"
+                           Padding="20,15">
+                        <StackPanel>
+                            <TextBlock Text="📅" 
+                                      FontSize="24" 
+                                      HorizontalAlignment="Center"
+                                      Margin="0,0,0,10"/>
+                            <TextBlock Text="{Binding TotalPatientsThisMonth}" 
+                                      FontSize="28" 
+                                      FontWeight="Bold"
+                                      Foreground="{StaticResource WhiteColor}"
+                                      HorizontalAlignment="Center"/>
+                            <TextBlock Text="إجمالي المرضى هذا الشهر" 
+                                      FontSize="12"
+                                      Foreground="{StaticResource WhiteColor}"
+                                      HorizontalAlignment="Center"
+                                      FlowDirection="RightToLeft"
+                                      TextWrapping="Wrap"/>
+                        </StackPanel>
+                    </Border>
+
+                    <!-- إجمالي التقارير -->
+                    <Border Grid.Column="1" 
+                           Background="{StaticResource PrimaryColor}"
+                           CornerRadius="8"
+                           Margin="5"
+                           Padding="20,15">
+                        <StackPanel>
+                            <TextBlock Text="📊" 
+                                      FontSize="24" 
+                                      HorizontalAlignment="Center"
+                                      Margin="0,0,0,10"/>
+                            <TextBlock Text="{Binding TotalReportsGenerated}" 
+                                      FontSize="28" 
+                                      FontWeight="Bold"
+                                      Foreground="{StaticResource WhiteColor}"
+                                      HorizontalAlignment="Center"/>
+                            <TextBlock Text="إجمالي التقارير المُنتجة" 
+                                      FontSize="12"
+                                      Foreground="{StaticResource WhiteColor}"
+                                      HorizontalAlignment="Center"
+                                      FlowDirection="RightToLeft"
+                                      TextWrapping="Wrap"/>
+                        </StackPanel>
+                    </Border>
+                </Grid>
+
+                <!-- معلومات إضافية -->
+                <Border Background="{StaticResource WhiteColor}"
+                       CornerRadius="8"
+                       BorderBrush="{StaticResource BorderColor}"
+                       BorderThickness="1"
+                       Padding="20"
+                       Margin="0,10,0,0">
+                    <StackPanel FlowDirection="RightToLeft">
+                        <TextBlock Text="معلومات النظام" 
+                                  FontSize="18" 
+                                  FontWeight="Bold"
+                                  Foreground="{StaticResource PrimaryColor}"
+                                  Margin="0,0,0,15"/>
+                        
+                        <Grid>
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="Auto"/>
+                            </Grid.RowDefinitions>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+
+                            <TextBlock Grid.Row="0" Grid.Column="0" 
+                                      Text="💻 حالة النظام:" 
+                                      FontWeight="SemiBold"
+                                      Margin="0,5,10,5"/>
+                            <TextBlock Grid.Row="0" Grid.Column="1" 
+                                      Text="نشط ويعمل بكفاءة"
+                                      Foreground="{StaticResource SupportingColor}"
+                                      Margin="0,5"/>
+
+                            <TextBlock Grid.Row="1" Grid.Column="0" 
+                                      Text="🔄 آخر نسخ احتياطي:" 
+                                      FontWeight="SemiBold"
+                                      Margin="0,5,10,5"/>
+                            <TextBlock Grid.Row="1" Grid.Column="1" 
+                                      Text="2025/06/04 05:30"
+                                      Margin="0,5"/>
+
+                            <TextBlock Grid.Row="2" Grid.Column="0" 
+                                      Text="👨‍💻 المستخدم الحالي:" 
+                                      FontWeight="SemiBold"
+                                      Margin="0,5,10,5"/>
+                            <TextBlock Grid.Row="2" Grid.Column="1" 
+                                      Text="المدير العام"
+                                      Margin="0,5"/>
+                        </Grid>
+                    </StackPanel>
+                </Border>
+            </StackPanel>
+        </ScrollViewer>
+
+        <!-- شريط الحالة -->
+        <Border Grid.Row="2" 
+               Background="{StaticResource ComplementaryColor}" 
+               Padding="15,8">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+                
+                <TextBlock Grid.Column="0"
+                          Text="مرحباً بك في نظام OGRALAB - إدارة المختبرات الطبية"
+                          Foreground="{StaticResource WhiteColor}"
+                          FontSize="12"
+                          VerticalAlignment="Center"
+                          FlowDirection="RightToLeft"/>
+                
+                <StackPanel Grid.Column="1" 
+                           Orientation="Horizontal">
+                    <TextBlock Text="🟢" 
+                              FontSize="14"
+                              VerticalAlignment="Center"
+                              Margin="0,0,5,0"/>
+                    <TextBlock Text="متصل" 
+                              Foreground="{StaticResource WhiteColor}"
+                              FontSize="12"
+                              VerticalAlignment="Center"/>
+                </StackPanel>
+            </Grid>
+        </Border>
+    </Grid>
+</UserControl>

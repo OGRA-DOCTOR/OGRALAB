@@ -9,6 +9,7 @@ using OGRALAB.Commands;
 using OGRALAB.Models;
 using OGRALAB.Services;
 using OGRALAB.Views;
+
 namespace OGRALAB.ViewModels
 {
     public class LoginViewModel : BaseViewModel
@@ -22,6 +23,7 @@ namespace OGRALAB.ViewModels
         private bool _isLoggingIn = false;
         private string _statusMessage = string.Empty;
         private ObservableCollection<string> _recentUsernames = new();
+
         public LoginViewModel(IAuthenticationService authService)
         {
             _authService = authService;
@@ -29,11 +31,13 @@ namespace OGRALAB.ViewModels
             ExitCommand = new RelayCommand(Exit);
             TogglePasswordVisibilityCommand = new RelayCommand(TogglePasswordVisibility);
             UsernameSelectionChangedCommand = new RelayCommand<string>(OnUsernameSelectionChanged);
-
+            
             LoadRecentUsernames();
             LoadUserSettings();
         }
+
         #region Properties
+
         public string Username
         {
             get => _username;
@@ -46,6 +50,7 @@ namespace OGRALAB.ViewModels
                 }
             }
         }
+
         public string Password
         {
             get => _password;
@@ -57,6 +62,7 @@ namespace OGRALAB.ViewModels
                 }
             }
         }
+
         public string SelectedUsername
         {
             get => _selectedUsername;
@@ -71,93 +77,88 @@ namespace OGRALAB.ViewModels
                 }
             }
         }
+
         public bool IsPasswordVisible
         {
             get => _isPasswordVisible;
             set => SetProperty(ref _isPasswordVisible, value);
         }
+
         public bool RememberMe
         {
             get => _rememberMe;
             set => SetProperty(ref _rememberMe, value);
         }
+
         public bool IsLoggingIn
         {
             get => _isLoggingIn;
             set => SetProperty(ref _isLoggingIn, value);
         }
+
         public string StatusMessage
         {
             get => _statusMessage;
             set => SetProperty(ref _statusMessage, value);
         }
+
         public ObservableCollection<string> RecentUsernames
         {
             get => _recentUsernames;
             set => SetProperty(ref _recentUsernames, value);
         }
+
         #endregion
+
         #region Commands
+
         public AsyncRelayCommand LoginCommand { get; }
         public RelayCommand ExitCommand { get; }
         public RelayCommand TogglePasswordVisibilityCommand { get; }
         public RelayCommand<string> UsernameSelectionChangedCommand { get; }
+
         #endregion
+
         #region Methods
+
         private bool CanLogin() => !string.IsNullOrWhiteSpace(Username) && !string.IsNullOrWhiteSpace(Password) && !IsLoggingIn;
+
         private async Task LoginAsync()
         {
             try
             {
                 IsLoggingIn = true;
                 StatusMessage = "Authenticating...";
+
                 var user = await _authService.AuthenticateAsync(Username, Password);
+
                 if (user != null)
                 {
                     StatusMessage = "Login successful!";
-
+                    
                     // Update last login
                     await _authService.UpdateLastLoginAsync(Username);
-
+                    
                     // Save settings if remember me is checked
                     if (RememberMe)
                     {
                         await _authService.SaveUserSettingsAsync(Username, RememberMe);
                     }
-                    // Navigate to main window - FIXED VERSION
+
+                    // Navigate to main window
                     Application.Current.Dispatcher.Invoke(() =>
                     {
-                        try
+                        var mainWindow = new MainWindow(user);
+                        mainWindow.Show();
+                        
+                        // Close login window
+                        foreach (Window window in Application.Current.Windows)
                         {
-                            System.Diagnostics.Debug.WriteLine($"Creating MainWindow for user: {user.Username}");
-
-                            var mainWindow = new MainWindow(user);
-
-                            // تعيين النافذة الرئيسية بشكل صحيح - هذا هو الإصلاح الرئيسي
-                            Application.Current.MainWindow = mainWindow;
-
-                            System.Diagnostics.Debug.WriteLine("MainWindow assigned to Application.Current.MainWindow");
-
-                            mainWindow.Show();
-
-                            System.Diagnostics.Debug.WriteLine($"MainWindow.Show() called - IsVisible: {mainWindow.IsVisible}");
-
-                            // إغلاق نافذة تسجيل الدخول بعد التأكد من فتح النافذة الرئيسية
-                            var loginWindow = Application.Current.Windows.OfType<LoginWindow>().FirstOrDefault();
-                            if (loginWindow != null)
+                            if (window is LoginWindow)
                             {
-                                System.Diagnostics.Debug.WriteLine("Closing LoginWindow");
-                                loginWindow.Close();
+                                window.Close();
+                                break;
                             }
-
-                            System.Diagnostics.Debug.WriteLine($"Navigation completed - Active windows: {Application.Current.Windows.Count}");
-                        }
-                        catch (Exception ex)
-                        {
-                            System.Diagnostics.Debug.WriteLine($"Error in navigation: {ex.Message}");
-                            MessageBox.Show($"Error opening main window: {ex.Message}", "Error",
-                                           MessageBoxButton.OK, MessageBoxImage.Error);
-                            StatusMessage = "Failed to open main window. Please try again.";
                         }
                     });
                 }
@@ -170,21 +171,23 @@ namespace OGRALAB.ViewModels
             catch (Exception ex)
             {
                 StatusMessage = $"Login failed: {ex.Message}";
-                System.Diagnostics.Debug.WriteLine($"Login exception: {ex}");
             }
             finally
             {
                 IsLoggingIn = false;
             }
         }
+
         private void Exit()
         {
             Application.Current.Shutdown();
         }
+
         private void TogglePasswordVisibility()
         {
             IsPasswordVisible = !IsPasswordVisible;
         }
+
         private void OnUsernameSelectionChanged(string? username)
         {
             if (!string.IsNullOrEmpty(username))
@@ -193,6 +196,7 @@ namespace OGRALAB.ViewModels
                 LoadUserSettingsForUsername(username);
             }
         }
+
         private async void LoadRecentUsernames()
         {
             try
@@ -206,6 +210,7 @@ namespace OGRALAB.ViewModels
                 System.Diagnostics.Debug.WriteLine($"Error loading recent usernames: {ex.Message}");
             }
         }
+
         private async void LoadUserSettings()
         {
             // Check if there's a default username to load
@@ -215,6 +220,7 @@ namespace OGRALAB.ViewModels
                 await LoadUserSettingsForUsername(lastUsername);
             }
         }
+
         private async Task LoadUserSettingsForUsername(string username)
         {
             try
@@ -235,6 +241,7 @@ namespace OGRALAB.ViewModels
                 System.Diagnostics.Debug.WriteLine($"Error loading user settings: {ex.Message}");
             }
         }
+
         public void HandlePasswordChanged(object sender, RoutedEventArgs e)
         {
             if (sender is PasswordBox passwordBox)
@@ -242,6 +249,7 @@ namespace OGRALAB.ViewModels
                 Password = passwordBox.Password;
             }
         }
+
         #endregion
     }
 }
