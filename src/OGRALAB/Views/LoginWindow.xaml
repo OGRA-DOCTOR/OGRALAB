@@ -8,7 +8,7 @@
         ResizeMode="NoResize"
         Background="#F8F9FA"
         Icon="../Images/ogralab_logo.png">
-    
+
     <Window.Resources>
         <!-- Color Resources -->
         <SolidColorBrush x:Key="PrimaryColor" Color="#1B4D3E"/>
@@ -20,7 +20,7 @@
         <SolidColorBrush x:Key="BorderColor" Color="#CCCCCC"/>
         <SolidColorBrush x:Key="ErrorColor" Color="#DC3545"/>
         <SolidColorBrush x:Key="SuccessColor" Color="#28A745"/>
-        
+
         <!-- Button Styles -->
         <Style x:Key="PrimaryButtonStyle" TargetType="Button">
             <Setter Property="Background" Value="{StaticResource PrimaryColor}"/>
@@ -227,16 +227,22 @@
                     </StackPanel>
 
                     <!-- Options -->
-                    <StackPanel Orientation="Horizontal" 
-                                HorizontalAlignment="SpaceBetween"
-                                Margin="0,0,0,20">
-                        <CheckBox Content="Show Password"
+                    <Grid Margin="0,0,0,20">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
+                        <CheckBox Grid.Column="0" 
+                                  Content="Show Password"
                                   IsChecked="{Binding IsPasswordVisible}"
-                                  Foreground="{StaticResource DarkGray}"/>
-                        <CheckBox Content="Remember Me"
+                                  Foreground="{StaticResource DarkGray}"
+                                  HorizontalAlignment="Left"/>
+                        <CheckBox Grid.Column="1" 
+                                  Content="Remember Me"
                                   IsChecked="{Binding RememberMe}"
-                                  Foreground="{StaticResource DarkGray}"/>
-                    </StackPanel>
+                                  Foreground="{StaticResource DarkGray}"
+                                  HorizontalAlignment="Right"/>
+                    </Grid>
 
                     <!-- Status Message -->
                     <TextBlock Name="StatusMessageBlock"

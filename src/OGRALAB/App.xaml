@@ -8,7 +8,7 @@
             <ResourceDictionary.MergedDictionaries>
                 <!-- Add global styles here if needed -->
             </ResourceDictionary.MergedDictionaries>
-            
+
             <!-- Global Color Scheme -->
             <SolidColorBrush x:Key="PrimaryColor" Color="#1B4D3E"/>
             <SolidColorBrush x:Key="SecondaryColor" Color="#2E7D68"/>

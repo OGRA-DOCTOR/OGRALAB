@@ -17,14 +17,30 @@ namespace OGRALAB
     public partial class App : Application
     {
         private IHost? _host;
-        private IServiceProvider? _serviceProvider;
+        // حذف _serviceProvider لأنه يمكن الوصول إليه عبر _host.Services
 
         protected override async void OnStartup(StartupEventArgs e)
         {
+            AppDomain.CurrentDomain.UnhandledException += (s, ex) =>
+            {
+                if (ex.ExceptionObject is Exception exc)
+                    ErrorLogger.Log(exc, "AppDomain.CurrentDomain.UnhandledException");
+            };
+            DispatcherUnhandledException += (s, ex) =>
+            {
+                ErrorLogger.Log(ex.Exception, "Application.DispatcherUnhandledException");
+                ex.Handled = true;
+            };
+            TaskScheduler.UnobservedTaskException += (s, ex) =>
+            {
+                ErrorLogger.Log(ex.Exception, "TaskScheduler.UnobservedTaskException");
+                ex.SetObserved();
+            };
+
             // Check for single instance
             if (!SingleInstanceService.IsFirstInstance())
             {
-                MessageBox.Show("OGRALAB is already running.", "Application Already Running", 
+                MessageBox.Show("OGRALAB is already running.", "Application Already Running",
                               MessageBoxButton.OK, MessageBoxImage.Information);
                 SingleInstanceService.BringExistingInstanceToFront();
                 Shutdown();
@@ -38,23 +54,29 @@ namespace OGRALAB
 
                 // Build host with services
                 _host = CreateHostBuilder(configuration).Build();
-                _serviceProvider = _host.Services;
 
-                // Initialize database
-                await InitializeDatabaseAsync();
-
-                // Start the host
+                // Start the host - هذا سيبني ServiceProvider أيضاً
                 await _host.StartAsync();
 
+                // Initialize database (يجب أن يتم هذا ضمن نطاق أيضاً)
+                await InitializeDatabaseAsync(_host.Services);
+
                 // Create and show login window
-                var loginWindow = CreateLoginWindow();
+                // LoginWindow سيتم إنشاؤها وحقن الـ ViewModel بها من خلال ServiceProvider الخاص بالـ Host
+                // لضمان أن الـ DbContext والخدمات الأخرى تعيش طالما الـ Host حي.
+                // بدلاً من إنشاء scope مؤقت هنا، سنجعل LoginViewModel يعتمد على scope يتم إنشاؤه عند الحاجة أو
+                // يتم تسجيل الخدمات بشكل يسمح بذلك.
+                // الطريقة الأبسط هي أن يقوم LoginWindow بطلب الـ ViewModel من الـ ServiceProvider.
+
+                var loginWindow = _host.Services.GetRequiredService<LoginWindow>();
                 loginWindow.Show();
 
                 // Don't call base.OnStartup as we're handling startup manually
             }
             catch (Exception ex)
             {
-                MessageBox.Show($"Application startup failed: {ex.Message}", "Startup Error", 
+                ErrorLogger.Log(ex, "App.OnStartup");
+                MessageBox.Show($"Application startup failed: {ex.Message}\n\n{ex.StackTrace}", "Startup Error", // أضفت StackTrace للمساعدة في التشخيص
                               MessageBoxButton.OK, MessageBoxImage.Error);
                 Shutdown();
             }
@@ -74,7 +96,6 @@ namespace OGRALAB
             }
             catch (Exception ex)
             {
-                // Log error if needed
                 System.Diagnostics.Debug.WriteLine($"Error during shutdown: {ex.Message}");
             }
             finally
@@ -95,21 +116,27 @@ namespace OGRALAB
             Host.CreateDefaultBuilder()
                 .ConfigureServices((context, services) =>
                 {
-                    // Add configuration
                     services.AddSingleton(configuration);
 
-                    // Add Entity Framework
+                    // تسجيل DbContext كـ Scoped هو السلوك الافتراضي وهو جيد إذا تم إدارة النطاقات بشكل صحيح.
+                    // في تطبيق WPF، كل نافذة "رئيسية" أو عملية يمكن أن تعتبر نطاقاً.
+                    // عند استخدام AddDbContext، EF Core يعتني بإدارة دورة حياة Context.
                     services.AddDbContext<OgralabDbContext>(options =>
-                        options.UseSqlite(configuration.GetConnectionString("DefaultConnection")));
+                        options.UseSqlite(configuration.GetConnectionString("DefaultConnection"))
+                        // يمكنك إضافة .EnableSensitiveDataLogging() هنا أثناء التطوير لرؤية قيم المتغيرات في استعلامات EF Core
+                        // .EnableSensitiveDataLogging() 
+                        );
 
-                    // Add services
                     services.AddScoped<IAuthenticationService, AuthenticationService>();
 
-                    // Add ViewModels
                     services.AddTransient<LoginViewModel>();
-                    services.AddTransient<MainViewModel>();
+                    services.AddTransient<MainViewModel>(); // افترض أنك ستحتاج MainViewModel لاحقاً
 
-                    // Add logging
+                    // تسجيل النوافذ كـ Transient حتى يتم إنشاء نسخة جديدة في كل مرة يتم طلبها
+                    // ويتم حقن الـ ViewModels الخاصة بها.
+                    services.AddTransient<LoginWindow>();
+                    services.AddTransient<MainWindow>(); // افترض أنك ستحتاج MainWindow لاحقاً
+
                     services.AddLogging(configure =>
                     {
                         configure.AddConsole();
@@ -117,26 +144,28 @@ namespace OGRALAB
                     });
                 });
 
-        private async Task InitializeDatabaseAsync()
+        // تم تعديل الدالة لتأخذ IServiceProvider كوسيط
+        private async Task InitializeDatabaseAsync(IServiceProvider serviceProvider)
         {
             try
             {
-                using var scope = _serviceProvider!.CreateScope();
+                // إنشاء نطاق جديد لعمليات قاعدة البيانات هنا لضمان التخلص الصحيح من context
+                using var scope = serviceProvider.CreateScope();
                 var context = scope.ServiceProvider.GetRequiredService<OgralabDbContext>();
 
-                // Ensure Data directory exists
                 var connectionString = context.Database.GetConnectionString();
                 if (!string.IsNullOrEmpty(connectionString))
                 {
                     var dataSource = GetDataSourceFromConnectionString(connectionString);
-                    var directory = Path.GetDirectoryName(dataSource);
-                    if (!string.IsNullOrEmpty(directory) && !Directory.Exists(directory))
+                    if (dataSource != null) // تحقق من أن dataSource ليس null
                     {
-                        Directory.CreateDirectory(directory);
+                        var directory = Path.GetDirectoryName(dataSource);
+                        if (!string.IsNullOrEmpty(directory) && !Directory.Exists(directory))
+                        {
+                            Directory.CreateDirectory(directory);
+                        }
                     }
                 }
-
-                // Ensure database is created and migrations are applied
                 await context.Database.EnsureCreatedAsync();
             }
             catch (Exception ex)
@@ -145,7 +174,8 @@ namespace OGRALAB
             }
         }
 
-        private string GetDataSourceFromConnectionString(string connectionString)
+        // تم تعديل الدالة لتأخذ IServiceProvider كوسيط
+        private string? GetDataSourceFromConnectionString(string connectionString) // تم تغيير نوع الإرجاع إلى string?
         {
             var parts = connectionString.Split(';');
             foreach (var part in parts)
@@ -156,22 +186,12 @@ namespace OGRALAB
                     return keyValue[1].Trim();
                 }
             }
-            return "Data/ogralab.db"; // Default fallback
+            // إرجاع null إذا لم يتم العثور عليه بدلاً من قيمة افتراضية قد تكون خاطئة
+            return null;
         }
 
-        private LoginWindow CreateLoginWindow()
-        {
-            using var scope = _serviceProvider!.CreateScope();
-            var loginViewModel = scope.ServiceProvider.GetRequiredService<LoginViewModel>();
-            return new LoginWindow(loginViewModel);
-        }
-
-        public static T GetService<T>() where T : class
-        {
-            var app = Current as App;
-            using var scope = app?._serviceProvider?.CreateScope();
-            return scope?.ServiceProvider.GetRequiredService<T>() 
-                ?? throw new InvalidOperationException($"Service {typeof(T).Name} not found");
-        }
+        // تم حذف دالة CreateLoginWindow لأننا سنحصل عليها من ServiceProvider مباشرة في OnStartup
+        // تم حذف دالة GetService<T> لأنها تنشئ نطاقاً مؤقتاً قد يسبب نفس المشكلة،
+        // والوصول للخدمات يجب أن يتم من خلال _host.Services أو IServiceProvider المحقون.
     }
 }
