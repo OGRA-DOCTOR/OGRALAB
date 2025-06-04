@@ -1,0 +1,119 @@
+name: OGRALAB Build and Test
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+
+jobs:
+  build:
+    runs-on: windows-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: '8.0.x'
+        
+    - name: Restore dependencies
+      run: dotnet restore src/OGRALAB/OGRALAB.csproj
+      
+    - name: Build
+      run: dotnet build src/OGRALAB/OGRALAB.csproj --no-restore --configuration Release
+      
+    - name: Test (if tests exist)
+      run: |
+        if (Test-Path "tests") {
+          dotnet test --no-build --configuration Release --verbosity normal
+        } else {
+          Write-Host "No tests found - skipping test execution"
+        }
+      shell: powershell
+      
+    - name: Publish artifacts
+      if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+      run: dotnet publish src/OGRALAB/OGRALAB.csproj --configuration Release --output ./publish
+      
+    - name: Upload build artifacts
+      if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+      uses: actions/upload-artifact@v4
+      with:
+        name: OGRALAB-Release
+        path: ./publish
+        retention-days: 30
+
+  code-analysis:
+    runs-on: ubuntu-latest
+    permissions:
+      security-events: write
+      
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Initialize CodeQL
+      uses: github/codeql-action/init@v3
+      with:
+        languages: csharp
+        
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: '8.0.x'
+        
+    - name: Restore and build for analysis
+      run: |
+        dotnet restore src/OGRALAB/OGRALAB.csproj
+        dotnet build src/OGRALAB/OGRALAB.csproj --no-restore --configuration Release
+        
+    - name: Perform CodeQL Analysis
+      uses: github/codeql-action/analyze@v3
+
+  security-scan:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Run security scan
+      uses: securecodewarrior/github-action-add-sarif@v1
+      with:
+        sarif-file: 'security-scan-results.sarif'
+      continue-on-error: true
+      
+    - name: Check for vulnerabilities in dependencies
+      run: |
+        dotnet list src/OGRALAB/OGRALAB.csproj package --vulnerable --include-transitive
+      continue-on-error: true
+
+  quality-checks:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: '8.0.x'
+        
+    - name: Install dotnet format tool
+      run: dotnet tool install -g dotnet-format
+      
+    - name: Check code formatting
+      run: dotnet format src/OGRALAB/OGRALAB.csproj --verify-no-changes --verbosity diagnostic
+      continue-on-error: true
+      
+    - name: Code metrics
+      run: |
+        echo "=== Code Metrics ==="
+        find src -name "*.cs" | wc -l | awk '{print "C# Files: " $1}'
+        find src -name "*.cs" -exec wc -l {} + | tail -1 | awk '{print "Total Lines: " $1}'
+        echo "=== Build Status ==="
+        dotnet build src/OGRALAB/OGRALAB.csproj --configuration Release --verbosity minimal
