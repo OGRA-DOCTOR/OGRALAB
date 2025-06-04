@@ -1,35 +1,35 @@
 <Application x:Class="OGRALAB.App"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-             ShutdownMode="OnMainWindowClose">
+             xmlns:local="clr-namespace:OGRALAB"
+             xmlns:converters="clr-namespace:OGRALAB.Converters"
+             ShutdownMode="OnExplicitShutdown">
     <Application.Resources>
         <!-- Global Resources -->
         <ResourceDictionary>
             <ResourceDictionary.MergedDictionaries>
                 <!-- Add global styles here if needed -->
             </ResourceDictionary.MergedDictionaries>
-            
-            <!-- نظام الألوان الخماسي الجديد للبيئة الطبية -->
-            <SolidColorBrush x:Key="PrimaryColor" Color="#2C5F68"/>        <!-- أزرق مخضر داكن -->
-            <SolidColorBrush x:Key="SecondaryColor" Color="#7B2D8E"/>      <!-- بنفسجي طبي -->
-            <SolidColorBrush x:Key="AccentColor" Color="#E67E22"/>         <!-- برتقالي طبي -->
-            <SolidColorBrush x:Key="SupportingColor" Color="#27AE60"/>     <!-- أخضر طبي -->
-            <SolidColorBrush x:Key="ComplementaryColor" Color="#34495E"/>  <!-- رمادي أزرق -->
-            
-            <!-- ألوان إضافية مساعدة -->
+
+            <!-- Global Color Scheme -->
+            <SolidColorBrush x:Key="PrimaryColor" Color="#1B4D3E"/>
+            <SolidColorBrush x:Key="SecondaryColor" Color="#2E7D68"/>
+            <SolidColorBrush x:Key="AccentColor" Color="#4A9F8A"/>
             <SolidColorBrush x:Key="LightBlue" Color="#E8F4F8"/>
-            <SolidColorBrush x:Key="DarkGray" Color="#2C3E50"/>
-            <SolidColorBrush x:Key="LightGray" Color="#F8F9FA"/>
-            <SolidColorBrush x:Key="BorderColor" Color="#BDC3C7"/>
-            <SolidColorBrush x:Key="ErrorColor" Color="#E74C3C"/>
-            <SolidColorBrush x:Key="SuccessColor" Color="#27AE60"/>
-            <SolidColorBrush x:Key="WhiteColor" Color="#FFFFFF"/>
-            <SolidColorBrush x:Key="BlackColor" Color="#2C3E50"/>
-            
-            <!-- ألوان الحالة -->
-            <SolidColorBrush x:Key="ActiveColor" Color="#2C5F68"/>
-            <SolidColorBrush x:Key="DisabledColor" Color="#95A5A6"/>
-            <SolidColorBrush x:Key="HoverColor" Color="#34495E"/>
+            <SolidColorBrush x:Key="DarkGray" Color="#333333"/>
+            <SolidColorBrush x:Key="LightGray" Color="#F0F0F0"/>
+            <SolidColorBrush x:Key="BorderColor" Color="#CCCCCC"/>
+            <SolidColorBrush x:Key="ErrorColor" Color="#DC3545"/>
+            <SolidColorBrush x:Key="SuccessColor" Color="#28A745"/>
+            <!-- Added missing color resources for UI -->
+            <SolidColorBrush x:Key="WhiteColor" Color="#FFFFFFFF"/>
+            <SolidColorBrush x:Key="SupportingColor" Color="#B2DFDB"/>
+            <SolidColorBrush x:Key="ComplementaryColor" Color="#1976D2"/>
+            <SolidColorBrush x:Key="HoverColor" Color="#1565C0"/>
+            <SolidColorBrush x:Key="DisabledColor" Color="#BDBDBD"/>
+            <SolidColorBrush x:Key="ActiveColor" Color="#388E3C"/>
+            <!-- NullToVisibilityConverter for MainWindow.xaml -->
+            <converters:NullToVisibilityConverter x:Key="NullToVisibilityConverter" />
         </ResourceDictionary>
     </Application.Resources>
 </Application>

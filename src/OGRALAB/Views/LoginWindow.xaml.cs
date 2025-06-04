@@ -2,13 +2,15 @@ using System;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
+using System.Windows.Media;
 using OGRALAB.ViewModels;
 
 namespace OGRALAB.Views
 {
     public partial class LoginWindow : Window
     {
-        private LoginViewModel? _viewModel;
+        private readonly LoginViewModel? _viewModel;
+        private bool _isUpdatingPassword;
 
         public LoginWindow()
         {
@@ -29,8 +31,7 @@ namespace OGRALAB.Views
 
             // Handle password box events
             PasswordBox.PasswordChanged += PasswordBox_PasswordChanged;
-            PasswordTextBox.TextChanged += PasswordTextBox_TextChanged;
-            
+
             // Handle Enter key press
             KeyDown += LoginWindow_KeyDown;
 
@@ -43,17 +44,37 @@ namespace OGRALAB.Views
 
         private void PasswordBox_PasswordChanged(object sender, RoutedEventArgs e)
         {
-            if (_viewModel != null && sender is PasswordBox passwordBox)
+            if (_viewModel != null && !_isUpdatingPassword && sender is PasswordBox passwordBox)
             {
-                _viewModel.HandlePasswordChanged(sender, e);
+                _isUpdatingPassword = true;
+                try
+                {
+                    _viewModel.Password = passwordBox.Password;
+                }
+                finally
+                {
+                    _isUpdatingPassword = false;
+                }
             }
         }
 
         private void PasswordTextBox_TextChanged(object sender, TextChangedEventArgs e)
         {
-            if (_viewModel != null && sender is TextBox textBox)
+            if (_viewModel != null && !_isUpdatingPassword && sender is TextBox textBox)
             {
-                _viewModel.Password = textBox.Text;
+                _isUpdatingPassword = true;
+                try
+                {
+                    _viewModel.Password = textBox.Text;
+                    if (!_viewModel.IsPasswordVisible)
+                    {
+                        PasswordBox.Password = textBox.Text;
+                    }
+                }
+                finally
+                {
+                    _isUpdatingPassword = false;
+                }
             }
         }
 
@@ -82,26 +103,59 @@ namespace OGRALAB.Views
             {
                 UpdateLoadingIndicator();
             }
+            else if (e.PropertyName == nameof(LoginViewModel.Password) && !_isUpdatingPassword)
+            {
+                UpdatePasswordControls();
+            }
         }
 
-        private void UpdatePasswordVisibility()
+        private void UpdatePasswordControls()
         {
-            if (_viewModel != null)
+            if (_viewModel == null) return;
+
+            _isUpdatingPassword = true;
+            try
             {
                 if (_viewModel.IsPasswordVisible)
                 {
                     PasswordTextBox.Text = _viewModel.Password;
+                }
+                else
+                {
+                    PasswordBox.Password = _viewModel.Password;
+                }
+            }
+            finally
+            {
+                _isUpdatingPassword = false;
+            }
+        }
+
+        private void UpdatePasswordVisibility()
+        {
+            if (_viewModel == null) return;
+
+            _isUpdatingPassword = true;
+            try
+            {
+                if (_viewModel.IsPasswordVisible)
+                {
+                    PasswordTextBox.Text = PasswordBox.Password;
                     PasswordBox.Visibility = Visibility.Collapsed;
                     PasswordTextBox.Visibility = Visibility.Visible;
                     PasswordTextBox.Focus();
                 }
                 else
                 {
-                    PasswordBox.Password = _viewModel.Password;
+                    PasswordBox.Password = PasswordTextBox.Text;
                     PasswordBox.Visibility = Visibility.Visible;
                     PasswordTextBox.Visibility = Visibility.Collapsed;
                     PasswordBox.Focus();
                 }
+            }
+            finally
+            {
+                _isUpdatingPassword = false;
             }
         }
 
@@ -109,9 +163,25 @@ namespace OGRALAB.Views
         {
             if (_viewModel != null)
             {
-                StatusMessageBlock.Visibility = string.IsNullOrEmpty(_viewModel.StatusMessage) 
-                    ? Visibility.Collapsed 
-                    : Visibility.Visible;
+                bool hasMessage = !string.IsNullOrEmpty(_viewModel.StatusMessage);
+                StatusMessageBorder.Visibility = hasMessage ? Visibility.Visible : Visibility.Collapsed;
+
+                // Change color based on message type
+                if (hasMessage)
+                {
+                    if (_viewModel.StatusMessage.Contains("successful") || _viewModel.StatusMessage.Contains("success"))
+                    {
+                        StatusMessageBorder.Background = (SolidColorBrush)FindResource("SuccessColor");
+                    }
+                    else if (_viewModel.StatusMessage.Contains("Authenticating"))
+                    {
+                        StatusMessageBorder.Background = (SolidColorBrush)FindResource("SecondaryColor");
+                    }
+                    else
+                    {
+                        StatusMessageBorder.Background = (SolidColorBrush)FindResource("ErrorColor");
+                    }
+                }
             }
         }
 
@@ -119,8 +189,8 @@ namespace OGRALAB.Views
         {
             if (_viewModel != null)
             {
-                LoadingProgressBar.Visibility = _viewModel.IsLoggingIn 
-                    ? Visibility.Visible 
+                LoadingBorder.Visibility = _viewModel.IsLoggingIn
+                    ? Visibility.Visible
                     : Visibility.Collapsed;
             }
         }
@@ -132,16 +202,12 @@ namespace OGRALAB.Views
             {
                 PasswordBox.PasswordChanged -= PasswordBox_PasswordChanged;
             }
-            if (PasswordTextBox != null)
-            {
-                PasswordTextBox.TextChanged -= PasswordTextBox_TextChanged;
-            }
             if (_viewModel != null)
             {
                 _viewModel.PropertyChanged -= ViewModel_PropertyChanged;
             }
             KeyDown -= LoginWindow_KeyDown;
-            
+
             base.OnClosed(e);
         }
     }
