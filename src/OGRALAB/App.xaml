@@ -28,8 +28,11 @@
             <SolidColorBrush x:Key="HoverColor" Color="#1565C0"/>
             <SolidColorBrush x:Key="DisabledColor" Color="#BDBDBD"/>
             <SolidColorBrush x:Key="ActiveColor" Color="#388E3C"/>
-            <!-- NullToVisibilityConverter for MainWindow.xaml -->
+            <!-- Converters -->
             <converters:NullToVisibilityConverter x:Key="NullToVisibilityConverter" />
+            <converters:EnumToBooleanConverter x:Key="EnumToBooleanConverter" />
+            <converters:StringToVisibilityConverter x:Key="StringToVisibilityConverter" />
+            <converters:BooleanToVisibilityConverter x:Key="BooleanToVisibilityConverter" />
         </ResourceDictionary>
     </Application.Resources>
 </Application>

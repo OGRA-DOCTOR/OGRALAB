@@ -90,14 +90,27 @@ namespace OGRALAB
 
                     services.AddScoped<IAuthenticationService, AuthenticationService>();
                     services.AddScoped<INavigationService, NavigationService>();
+                    
+                    // New Phase 3 Services
+                    services.AddScoped<PatientService>();
+                    services.AddScoped<TestService>();
+                    services.AddScoped<ResultService>();
 
                     services.AddTransient<LoginViewModel>();
                     services.AddTransient<MainViewModel>();
                     services.AddTransient<DashboardViewModel>();
+                    
+                    // New Phase 3 ViewModels
+                    services.AddTransient<AddPatientViewModel>();
+                    services.AddTransient<EnterResultsViewModel>();
 
                     services.AddTransient<LoginWindow>();
                     services.AddTransient<MainWindow>();
                     services.AddTransient<DashboardUserControl>();
+                    
+                    // New Phase 3 Windows
+                    services.AddTransient<AddPatientWindow>();
+                    services.AddTransient<EnterResultsWindow>();
 
                     services.AddLogging(configure =>
                     {

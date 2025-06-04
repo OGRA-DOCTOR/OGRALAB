@@ -8,10 +8,10 @@ namespace OGRALAB.Views
     /// </summary>
     public partial class DashboardUserControl : UserControl
     {
-        public DashboardUserControl()
+        public DashboardUserControl(DashboardViewModel viewModel)
         {
             InitializeComponent();
-            DataContext = new DashboardViewModel();
+            DataContext = viewModel;
         }
     }
 }
