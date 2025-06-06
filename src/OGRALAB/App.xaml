@@ -5,7 +5,6 @@
              xmlns:converters="clr-namespace:OGRALAB.Converters"
              ShutdownMode="OnExplicitShutdown">
     <Application.Resources>
-        <!-- Global Resources -->
         <ResourceDictionary>
             <ResourceDictionary.MergedDictionaries>
                 <!-- Add global styles here if needed -->
@@ -21,18 +20,21 @@
             <SolidColorBrush x:Key="BorderColor" Color="#CCCCCC"/>
             <SolidColorBrush x:Key="ErrorColor" Color="#DC3545"/>
             <SolidColorBrush x:Key="SuccessColor" Color="#28A745"/>
-            <!-- Added missing color resources for UI -->
             <SolidColorBrush x:Key="WhiteColor" Color="#FFFFFFFF"/>
             <SolidColorBrush x:Key="SupportingColor" Color="#B2DFDB"/>
             <SolidColorBrush x:Key="ComplementaryColor" Color="#1976D2"/>
             <SolidColorBrush x:Key="HoverColor" Color="#1565C0"/>
             <SolidColorBrush x:Key="DisabledColor" Color="#BDBDBD"/>
             <SolidColorBrush x:Key="ActiveColor" Color="#388E3C"/>
+
             <!-- Converters -->
             <converters:NullToVisibilityConverter x:Key="NullToVisibilityConverter" />
-            <converters:EnumToBooleanConverter x:Key="EnumToBooleanConverter" />
-            <converters:StringToVisibilityConverter x:Key="StringToVisibilityConverter" />
             <converters:BooleanToVisibilityConverter x:Key="BooleanToVisibilityConverter" />
+
+            <!-- إذا كنت تستخدم هذه الـ Converters ولديك ملفاتها البرمجية الصحيحة، يمكنك إزالة التعليق -->
+            <!-- <converters:EnumToBooleanConverter x:Key="EnumToBooleanConverter" /> -->
+            <!-- <converters:StringToVisibilityConverter x:Key="StringToVisibilityConverter" /> -->
+
         </ResourceDictionary>
     </Application.Resources>
 </Application>

@@ -1,14 +1,14 @@
 using System;
 using System.Collections.ObjectModel;
 using System.Linq;
-using System.Security;
 using System.Threading.Tasks;
-using System.Windows;
-using System.Windows.Controls;
+using System.Windows; // *** إضافة مهمة لاستخدام MessageBox ***
+using Microsoft.Extensions.DependencyInjection;
 using OGRALAB.Commands;
 using OGRALAB.Models;
 using OGRALAB.Services;
 using OGRALAB.Views;
+
 namespace OGRALAB.ViewModels
 {
     public class LoginViewModel : BaseViewModel
@@ -19,24 +19,22 @@ namespace OGRALAB.ViewModels
         private string _selectedUsername = string.Empty;
         private bool _isPasswordVisible = false;
         private bool _rememberMe = false;
-        private bool _isLoggingIn = false;
-        private string _statusMessage = string.Empty;
+        private bool _isLoggingIn = false; // ستبقى هذه الخاصية لكن لن نستخدمها لإظهار شريط التحميل
+        private string _statusMessage = string.Empty; // ستبقى هذه الخاصية لكن لن نستخدمها لرسائل المصادقة أو النجاح
         private ObservableCollection<string> _recentUsernames = new();
+
         public LoginViewModel(IAuthenticationService authService)
         {
-            _authService = authService;
+            _authService = authService ?? throw new ArgumentNullException(nameof(authService));
             LoginCommand = new AsyncRelayCommand(LoginAsync, CanLogin);
             ExitCommand = new RelayCommand(Exit);
             TogglePasswordVisibilityCommand = new RelayCommand(TogglePasswordVisibility);
-            UsernameSelectionChangedCommand = new RelayCommand<string>(OnUsernameSelectionChanged);
-
             InitializeAsync();
         }
 
         private async void InitializeAsync()
         {
             await LoadRecentUsernamesAsync();
-            await LoadUserSettingsAsync();
         }
 
         #region Properties
@@ -48,10 +46,10 @@ namespace OGRALAB.ViewModels
                 if (SetProperty(ref _username, value))
                 {
                     LoginCommand.RaiseCanExecuteChanged();
-                    _ = LoadUserSettingsForUsernameAsync(value);
                 }
             }
         }
+
         public string Password
         {
             get => _password;
@@ -63,142 +61,143 @@ namespace OGRALAB.ViewModels
                 }
             }
         }
+
         public string SelectedUsername
         {
             get => _selectedUsername;
             set
             {
-                if (SetProperty(ref _selectedUsername, value))
+                if (SetProperty(ref _selectedUsername, value) && !string.IsNullOrEmpty(value))
                 {
-                    if (!string.IsNullOrEmpty(value))
-                    {
-                        Username = value;
-                    }
+                    Username = value;
+                    _ = LoadUserSettingsForUsernameAsync(value);
                 }
             }
         }
+
         public bool IsPasswordVisible
         {
             get => _isPasswordVisible;
-            set => SetProperty(ref _isPasswordVisible, value);
+            set
+            {
+                SetProperty(ref _isPasswordVisible, value);
+            }
         }
+
         public bool RememberMe
         {
             get => _rememberMe;
             set => SetProperty(ref _rememberMe, value);
         }
-        public bool IsLoggingIn
+
+        public bool IsLoggingIn // ستبقى هذه الخاصية لكن لن يتم استخدامها لإظهار مؤشر تحميل مرئي
         {
             get => _isLoggingIn;
             set => SetProperty(ref _isLoggingIn, value);
         }
-        public string StatusMessage
+
+        public string StatusMessage // ستبقى هذه الخاصية لرسائل أخرى محتملة غير رسائل المصادقة
         {
             get => _statusMessage;
             set => SetProperty(ref _statusMessage, value);
         }
+
         public ObservableCollection<string> RecentUsernames
         {
             get => _recentUsernames;
             set => SetProperty(ref _recentUsernames, value);
         }
         #endregion
+
         #region Commands
         public AsyncRelayCommand LoginCommand { get; }
         public RelayCommand ExitCommand { get; }
         public RelayCommand TogglePasswordVisibilityCommand { get; }
-        public RelayCommand<string> UsernameSelectionChangedCommand { get; }
         #endregion
+
         #region Methods
         private bool CanLogin() => !string.IsNullOrWhiteSpace(Username) && !string.IsNullOrWhiteSpace(Password) && !IsLoggingIn;
+
         private async Task LoginAsync()
         {
+            IsLoggingIn = true; // سنبقي هذا لتعطيل زر تسجيل الدخول أثناء العملية
+            // StatusMessage = "Authenticating..."; // --- تم التعليق/الحذف: لن نعرض هذه الرسالة ---
+
             try
             {
-                IsLoggingIn = true;
-                StatusMessage = "Authenticating...";
                 var user = await _authService.AuthenticateAsync(Username, Password);
                 if (user != null)
                 {
-                    StatusMessage = "Login successful!";
-
-                    // Update last login
+                    // StatusMessage = "Login successful!"; // --- تم التعليق/الحذف: لن نعرض هذه الرسالة ---
                     await _authService.UpdateLastLoginAsync(Username);
+                    await _authService.SaveUserSettingsAsync(Username, RememberMe);
 
-                    // Save settings if remember me is checked
-                    if (RememberMe)
-                    {
-                        await _authService.SaveUserSettingsAsync(Username, RememberMe);
-                    }
-                    // Navigate to main window - FIXED VERSION
                     Application.Current.Dispatcher.Invoke(() =>
                     {
                         try
                         {
-                            System.Diagnostics.Debug.WriteLine($"Creating MainWindow for user: {user.Username}");
-
-                            var mainWindow = new MainWindow(user);
-
-                            // تعيين النافذة الرئيسية بشكل صحيح - هذا هو الإصلاح الرئيسي
-                            Application.Current.MainWindow = mainWindow;
-
-                            System.Diagnostics.Debug.WriteLine("MainWindow assigned to Application.Current.MainWindow");
-
-                            mainWindow.Show();
-
-                            System.Diagnostics.Debug.WriteLine($"MainWindow.Show() called - IsVisible: {mainWindow.IsVisible}");
-
-                            // إغلاق نافذة تسجيل الدخول بعد التأكد من فتح النافذة الرئيسية
-                            var loginWindow = Application.Current.Windows.OfType<LoginWindow>().FirstOrDefault();
-                            if (loginWindow != null)
+                            if (App.AppHost?.Services == null)
                             {
-                                System.Diagnostics.Debug.WriteLine("Closing LoginWindow");
-                                loginWindow.Close();
+                                throw new InvalidOperationException("Application Host or Services not initialized.");
                             }
-
-                            System.Diagnostics.Debug.WriteLine($"Navigation completed - Active windows: {Application.Current.Windows.Count}");
+                            var mainWindow = App.AppHost.Services.GetRequiredService<MainWindow>();
+                            var mainVm = mainWindow.DataContext as MainViewModel;
+                            if (mainVm != null)
+                            {
+                                mainVm.InitializeForUser(user);
+                            }
+                            else
+                            {
+                                throw new InvalidOperationException("MainViewModel not found in MainWindow's DataContext.");
+                            }
+                            Application.Current.MainWindow = mainWindow;
+                            mainWindow.Show();
+                            var loginWindow = Application.Current.Windows.OfType<LoginWindow>().FirstOrDefault();
+                            loginWindow?.Close();
                         }
                         catch (Exception ex)
                         {
-                            System.Diagnostics.Debug.WriteLine($"Error in navigation: {ex.Message}");
-                            MessageBox.Show($"Error opening main window: {ex.Message}", "Error",
+                            // رسائل الخطأ الحرجة مثل هذه يمكن أن تظل كـ MessageBox أو StatusMessage حسب الرغبة
+                            MessageBox.Show($"Error opening main window: {ex.Message}\n{ex.StackTrace}", "خطأ فادح",
                                            MessageBoxButton.OK, MessageBoxImage.Error);
-                            StatusMessage = "Failed to open main window. Please try again.";
+                            StatusMessage = "فشل في فتح النافذة الرئيسية."; // كمثال لرسالة داخلية
                         }
                     });
                 }
                 else
                 {
-                    StatusMessage = "Invalid username or password.";
-                    Password = string.Empty;
+                    // *** التغيير الرئيسي هنا: استخدام MessageBox للخطأ ***
+                    MessageBox.Show("اسم المستخدم أو كلمة المرور غير صحيحة.",
+                                    "خطأ في تسجيل الدخول",
+                                    MessageBoxButton.OK,
+                                    MessageBoxImage.Error);
+                    Password = string.Empty; // مسح كلمة المرور
+                    // StatusMessage = "Invalid username or password."; // --- تم استبداله بـ MessageBox ---
                 }
             }
             catch (Exception ex)
             {
-                StatusMessage = $"Login failed: {ex.Message}";
+                // لأخطاء الاتصال أو الأخطاء غير المتوقعة الأخرى
+                MessageBox.Show($"فشل تسجيل الدخول: {ex.Message}", "خطأ في النظام", MessageBoxButton.OK, MessageBoxImage.Error);
                 System.Diagnostics.Debug.WriteLine($"Login exception: {ex}");
+                // StatusMessage = $"Login failed: {ex.Message}"; // يمكن استبداله أو إبقاؤه إذا كان هناك مكان آخر يعرضه
             }
             finally
             {
-                IsLoggingIn = false;
+                IsLoggingIn = false; // إعادة تمكين زر تسجيل الدخول
             }
         }
+
         private void Exit()
         {
             Application.Current.Shutdown();
         }
+
         private void TogglePasswordVisibility()
         {
             IsPasswordVisible = !IsPasswordVisible;
         }
-        private void OnUsernameSelectionChanged(string? username)
-        {
-            if (!string.IsNullOrEmpty(username))
-            {
-                Username = username;
-                _ = LoadUserSettingsForUsernameAsync(username);
-            }
-        }
+
         private async Task LoadRecentUsernamesAsync()
         {
             try
@@ -208,44 +207,33 @@ namespace OGRALAB.ViewModels
             }
             catch (Exception ex)
             {
-                // Log error if needed
                 System.Diagnostics.Debug.WriteLine($"Error loading recent usernames: {ex.Message}");
             }
         }
-        private async Task LoadUserSettingsAsync()
-        {
-            // Check if there's a default username to load
-            if (RecentUsernames.Count > 0)
-            {
-                var lastUsername = RecentUsernames.First();
-                await LoadUserSettingsForUsernameAsync(lastUsername);
-            }
-        }
+
         private async Task LoadUserSettingsForUsernameAsync(string username)
         {
+            if (string.IsNullOrWhiteSpace(username))
+            {
+                RememberMe = false;
+                return;
+            }
             try
             {
                 var settings = await _authService.GetUserSettingsAsync(username);
-                if (settings != null && settings.RememberMeExpiry > DateTime.UtcNow)
+                if (settings != null && settings.RememberMe && settings.RememberMeExpiry > DateTime.UtcNow)
                 {
-                    RememberMe = settings.RememberMe;
-                    if (settings.RememberMe)
-                    {
-                        Username = settings.Username;
-                    }
+                    RememberMe = true;
+                }
+                else
+                {
+                    RememberMe = false;
                 }
             }
             catch (Exception ex)
             {
-                // Log error if needed
-                System.Diagnostics.Debug.WriteLine($"Error loading user settings: {ex.Message}");
-            }
-        }
-        public void HandlePasswordChanged(object sender, RoutedEventArgs e)
-        {
-            if (sender is PasswordBox passwordBox)
-            {
-                Password = passwordBox.Password;
+                System.Diagnostics.Debug.WriteLine($"Error loading user settings for {username}: {ex.Message}");
+                RememberMe = false;
             }
         }
         #endregion

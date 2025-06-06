@@ -17,7 +17,26 @@ namespace OGRALAB.Services
 
         public PatientService(OgralabDbContext context)
         {
-            _context = context;
+            // تم إعطاء قيمة لـ _context هنا، لذا لن يظهر التحذير CS8618 لهذا المُنشئ
+            _context = context ?? throw new ArgumentNullException(nameof(context));
+        }
+
+        // تم إزالة المُنشئ الفارغ الذي كان يسبب التحذير CS8618
+        // public PatientService()
+        // {
+        //     // Initialize service logic here
+        // }
+
+        public void PerformServiceLogic()
+        {
+            // Example method
+            if (_context == null)
+            {
+                // Handle the case where _context might not be initialized if the parameterless constructor were kept and _context made nullable.
+                // Since the parameterless constructor is removed, _context should always be initialized.
+                throw new InvalidOperationException("Database context is not initialized.");
+            }
+            // Add logic here
         }
 
         /// <summary>
@@ -28,7 +47,7 @@ namespace OGRALAB.Services
         {
             var today = DateTime.Now;
             var datePrefix = today.ToString("yyyyMMdd");
-            
+
             // البحث عن آخر رقم تسلسلي لليوم الحالي
             var lastPatientToday = await _context.Patients
                 .Where(p => p.PatientCode.StartsWith(datePrefix))
@@ -38,10 +57,14 @@ namespace OGRALAB.Services
             int dailySequence = 1;
             if (lastPatientToday != null)
             {
-                var lastSequenceStr = lastPatientToday.PatientCode.Substring(8); // أخذ آخر 4 أرقام
-                if (int.TryParse(lastSequenceStr, out int lastSequence))
+                // التأكد من أن طول PatientCode يسمح باستخلاص الجزء الرقمي بشكل صحيح
+                if (lastPatientToday.PatientCode.Length > 8)
                 {
-                    dailySequence = lastSequence + 1;
+                    var lastSequenceStr = lastPatientToday.PatientCode.Substring(8);
+                    if (int.TryParse(lastSequenceStr, out int lastSequence))
+                    {
+                        dailySequence = lastSequence + 1;
+                    }
                 }
             }
 
@@ -55,6 +78,8 @@ namespace OGRALAB.Services
         /// <returns>المريض المُضاف</returns>
         public async Task<Patient> AddPatientAsync(Patient patient)
         {
+            if (patient == null) throw new ArgumentNullException(nameof(patient));
+
             // إنشاء كود المريض إذا لم يكن موجوداً
             if (string.IsNullOrEmpty(patient.PatientCode))
             {
@@ -62,10 +87,10 @@ namespace OGRALAB.Services
             }
 
             patient.CreatedDate = DateTime.Now;
-            
+
             _context.Patients.Add(patient);
             await _context.SaveChangesAsync();
-            
+
             return patient;
         }
 
@@ -110,6 +135,8 @@ namespace OGRALAB.Services
         /// <returns>المريض إذا تم العثور عليه</returns>
         public async Task<Patient?> GetPatientByCodeAsync(string patientCode)
         {
+            if (string.IsNullOrWhiteSpace(patientCode)) return null;
+
             return await _context.Patients
                 .Include(p => p.Doctor)
                 .Include(p => p.Entity)
@@ -137,10 +164,10 @@ namespace OGRALAB.Services
                 .Include(p => p.Entity)
                 .Include(p => p.TestRequests)
                     .ThenInclude(tr => tr.Test)
-                .Where(p => 
+                .Where(p =>
                     p.PatientCode.ToLower().Contains(searchText) ||
                     p.FullName.ToLower().Contains(searchText) ||
-                    p.MobileNumber.Contains(searchText) ||
+                    (p.MobileNumber != null && p.MobileNumber.Contains(searchText)) || // Add null check for MobileNumber
                     (p.Doctor != null && p.Doctor.FullName.ToLower().Contains(searchText)))
                 .OrderByDescending(p => p.CreatedDate)
                 .ToListAsync();
@@ -153,11 +180,13 @@ namespace OGRALAB.Services
         /// <returns>المريض المُحدث</returns>
         public async Task<Patient> UpdatePatientAsync(Patient patient)
         {
+            if (patient == null) throw new ArgumentNullException(nameof(patient));
+
             patient.LastModifiedDate = DateTime.Now;
-            
+
             _context.Patients.Update(patient);
             await _context.SaveChangesAsync();
-            
+
             return patient;
         }
 
@@ -174,7 +203,7 @@ namespace OGRALAB.Services
 
             _context.Patients.Remove(patient);
             await _context.SaveChangesAsync();
-            
+
             return true;
         }
 
@@ -183,12 +212,12 @@ namespace OGRALAB.Services
         /// </summary>
         /// <param name="mobileNumber">رقم الموبايل</param>
         /// <returns>true إذا كان الرقم صحيح</returns>
-        public bool ValidateMobileNumber(string mobileNumber)
+        public bool ValidateMobileNumber(string? mobileNumber) // Made mobileNumber nullable to match potential usage
         {
             if (string.IsNullOrWhiteSpace(mobileNumber))
                 return false;
 
-            // التحقق من أن الرقم يحتوي على 11 رقم بالضبط
+            // التحقق من أن الرقم يحتوي على 11 رقم بالضبط وأن جميعها أرقام
             return mobileNumber.Length == 11 && mobileNumber.All(char.IsDigit);
         }
     }

@@ -20,21 +20,23 @@ namespace OGRALAB.ViewModels
     public class TestResultItem : BaseViewModel
     {
         private readonly TestResult _testResult;
-        
+
+        public int TestResultId => _testResult.Id;
         public int TestRequestId => _testResult.TestRequestId;
         public int TestId => _testResult.TestId;
-        public string TestAbbreviation => _testResult.Test?.Abbreviation ?? "";
-        public string TestUnit => _testResult.Test?.Unit ?? "";
-        public string NormalRange => _testResult.AppliedNormalRange;
+        public string TestAbbreviation => _testResult.Test?.Abbreviation ?? string.Empty;
+        public string TestUnit => _testResult.Test?.Unit ?? string.Empty;
+        public string NormalRange => _testResult.AppliedNormalRange; // AppliedNormalRange is string.Empty by default in TestResult
 
-        private string _textResult;
-        public string TextResult
+        private string _textResultValue; // Renamed to avoid confusion, stores the UI value
+        public string TextResultValue // This property is bound to UI
         {
-            get => _textResult;
+            get => _textResultValue;
             set
             {
-                SetProperty(ref _textResult, value);
-                _testResult.TextResult = value;
+                SetProperty(ref _textResultValue, value);
+                // Assign to the underlying model, ensuring non-null for TestResult.TextResult
+                _testResult.TextResult = value ?? string.Empty; // This addresses warning at line 38
                 UpdateFlag();
             }
         }
@@ -114,24 +116,39 @@ namespace OGRALAB.ViewModels
         public bool IsPrinted
         {
             get => _isPrinted;
-            set => SetProperty(ref _isPrinted, value);
+            set
+            {
+                SetProperty(ref _isPrinted, value);
+                if (_testResult.TestRequest != null) // Check if TestRequest is loaded
+                {
+                    _testResult.TestRequest.IsPrinted = value;
+                }
+            }
         }
 
         private bool _isExported;
         public bool IsExported
         {
             get => _isExported;
-            set => SetProperty(ref _isExported, value);
-        }
-
-        private string _comments;
-        public string Comments
-        {
-            get => _comments;
             set
             {
-                SetProperty(ref _comments, value);
-                _testResult.Comments = value;
+                SetProperty(ref _isExported, value);
+                if (_testResult.TestRequest != null) // Check if TestRequest is loaded
+                {
+                    _testResult.TestRequest.IsExported = value;
+                }
+            }
+        }
+
+        private string _commentsValue; // Renamed, stores the UI value
+        public string CommentsValue // This property is bound to UI
+        {
+            get => _commentsValue;
+            set
+            {
+                SetProperty(ref _commentsValue, value);
+                // Assign to the underlying model, ensuring non-null for TestResult.Comments
+                _testResult.Comments = value ?? string.Empty; // This addresses warning at line 135 (related to similar assignment logic)
             }
         }
 
@@ -139,13 +156,14 @@ namespace OGRALAB.ViewModels
 
         public TestResultItem(TestResult testResult)
         {
-            _testResult = testResult;
-            _textResult = testResult.TextResult;
+            _testResult = testResult ?? throw new ArgumentNullException(nameof(testResult));
+            // Initialize UI-bound properties from the model
+            _textResultValue = testResult.TextResult; // TextResult in model is non-nullable (string.Empty default)
             _numericResult = testResult.NumericResult;
             _flag = testResult.Flag;
             _isCompleted = testResult.IsCompleted;
             _isReviewed = testResult.IsReviewed;
-            _comments = testResult.Comments;
+            _commentsValue = testResult.Comments; // Comments in model is non-nullable (string.Empty default)
             _isPrinted = testResult.TestRequest?.IsPrinted ?? false;
             _isExported = testResult.TestRequest?.IsExported ?? false;
         }
@@ -158,7 +176,7 @@ namespace OGRALAB.ViewModels
             if (NumericResult.HasValue && test.MinNormalValue.HasValue && test.MaxNormalValue.HasValue)
             {
                 var value = NumericResult.Value;
-                
+
                 if ((test.CriticalLowValue.HasValue && value <= test.CriticalLowValue.Value) ||
                     (test.CriticalHighValue.HasValue && value >= test.CriticalHighValue.Value))
                 {
@@ -194,7 +212,6 @@ namespace OGRALAB.ViewModels
         private readonly ResultService _resultService;
 
         #region خصائص البحث والفلترة
-
         private string _patientCodeSearch = string.Empty;
         public string PatientCodeSearch
         {
@@ -202,7 +219,7 @@ namespace OGRALAB.ViewModels
             set
             {
                 SetProperty(ref _patientCodeSearch, value);
-                if (!string.IsNullOrEmpty(value))
+                if (!string.IsNullOrEmpty(value) && SearchPatientByCodeCommand.CanExecute(null))
                     SearchPatientByCodeCommand.Execute(null);
             }
         }
@@ -241,20 +258,19 @@ namespace OGRALAB.ViewModels
             get => _ageToFilter;
             set => SetProperty(ref _ageToFilter, value);
         }
-
         #endregion
 
         #region خصائص المريض المختار والنتائج
-
         private Patient? _selectedPatient;
         public Patient? SelectedPatient
         {
             get => _selectedPatient;
             set
             {
-                SetProperty(ref _selectedPatient, value);
-                if (value != null)
+                if (SetProperty(ref _selectedPatient, value) && value != null)
                     LoadPatientTestResults();
+                else if (value == null)
+                    TestResults.Clear();
             }
         }
 
@@ -264,21 +280,16 @@ namespace OGRALAB.ViewModels
             get => _selectedTestResult;
             set => SetProperty(ref _selectedTestResult, value);
         }
-
         #endregion
 
         #region مجموعات البيانات
-
         public ObservableCollection<Patient> TodayPatients { get; } = new();
         public ObservableCollection<Patient> SearchResults { get; } = new();
         public ObservableCollection<TestResultItem> TestResults { get; } = new();
-
         public ObservableCollection<string> PredefinedComments { get; } = new();
-
         #endregion
 
         #region خصائص التعليقات
-
         private string _selectedPredefinedComment = string.Empty;
         public string SelectedPredefinedComment
         {
@@ -288,7 +299,7 @@ namespace OGRALAB.ViewModels
                 SetProperty(ref _selectedPredefinedComment, value);
                 if (!string.IsNullOrEmpty(value) && SelectedTestResult != null)
                 {
-                    SelectedTestResult.Comments = value;
+                    SelectedTestResult.CommentsValue = value; // Use the UI-bound property
                 }
             }
         }
@@ -299,11 +310,9 @@ namespace OGRALAB.ViewModels
             get => _generalComments;
             set => SetProperty(ref _generalComments, value);
         }
-
         #endregion
 
         #region الأوامر
-
         public ICommand LoadDataCommand { get; }
         public ICommand SearchPatientByCodeCommand { get; }
         public ICommand SearchPatientsCommand { get; }
@@ -312,18 +321,37 @@ namespace OGRALAB.ViewModels
         public ICommand PrintResultsCommand { get; }
         public ICommand ExportResultsCommand { get; }
         public ICommand ClearFiltersCommand { get; }
-
         #endregion
+
+        private bool _isLoading;
+        public bool IsLoading
+        {
+            get => _isLoading;
+            set => SetProperty(ref _isLoading, value);
+        }
+
+        private string _errorMessage = string.Empty;
+        public string ErrorMessage
+        {
+            get => _errorMessage;
+            set => SetProperty(ref _errorMessage, value);
+        }
+
+        private string _successMessage = string.Empty;
+        public string SuccessMessage
+        {
+            get => _successMessage;
+            set => SetProperty(ref _successMessage, value);
+        }
 
         public EnterResultsViewModel(OgralabDbContext context, PatientService patientService, ResultService resultService)
         {
-            _context = context;
-            _patientService = patientService;
-            _resultService = resultService;
+            _context = context ?? throw new ArgumentNullException(nameof(context));
+            _patientService = patientService ?? throw new ArgumentNullException(nameof(patientService));
+            _resultService = resultService ?? throw new ArgumentNullException(nameof(resultService));
 
-            // إنشاء الأوامر
             LoadDataCommand = new AsyncRelayCommand(LoadDataAsync);
-            SearchPatientByCodeCommand = new AsyncRelayCommand(SearchPatientByCodeAsync);
+            SearchPatientByCodeCommand = new AsyncRelayCommand(SearchPatientByCodeAsync, () => !string.IsNullOrWhiteSpace(PatientCodeSearch));
             SearchPatientsCommand = new AsyncRelayCommand(SearchPatientsAsync);
             SaveResultsCommand = new AsyncRelayCommand(SaveResultsAsync, CanSaveResults);
             ReviewResultCommand = new AsyncRelayCommand(ReviewResultAsync, CanReviewResult);
@@ -331,30 +359,27 @@ namespace OGRALAB.ViewModels
             ExportResultsCommand = new RelayCommand(ExportResults, CanExportResults);
             ClearFiltersCommand = new RelayCommand(ClearFilters);
 
-            // تحميل التعليقات الجاهزة
             var comments = _resultService.GetPredefinedComments();
+            PredefinedComments.Clear();
             foreach (var comment in comments)
                 PredefinedComments.Add(comment);
         }
 
-        /// <summary>
-        /// تحميل البيانات الأساسية
-        /// </summary>
         private async Task LoadDataAsync()
         {
+            IsLoading = true;
+            ErrorMessage = string.Empty;
+            SuccessMessage = string.Empty;
             try
             {
-                IsLoading = true;
-
-                // تحميل مرضى اليوم
-                var todayPatients = await _patientService.GetTodayPatientsAsync();
+                var todayPatientsList = await _patientService.GetTodayPatientsAsync();
                 TodayPatients.Clear();
-                foreach (var patient in todayPatients)
+                foreach (var patient in todayPatientsList)
                     TodayPatients.Add(patient);
             }
             catch (Exception ex)
             {
-                ErrorMessage = $"خطأ في تحميل البيانات: {ex.Message}";
+                ErrorMessage = $"خطأ في تحميل بيانات اليوم: {ex.Message}";
             }
             finally
             {
@@ -362,33 +387,34 @@ namespace OGRALAB.ViewModels
             }
         }
 
-        /// <summary>
-        /// البحث عن مريض بالكود
-        /// </summary>
         private async Task SearchPatientByCodeAsync()
         {
+            if (string.IsNullOrWhiteSpace(PatientCodeSearch))
+            {
+                ErrorMessage = "يرجى إدخال كود المريض.";
+                return;
+            }
+
+            IsLoading = true;
+            ErrorMessage = string.Empty;
+            SuccessMessage = string.Empty;
             try
             {
-                if (string.IsNullOrWhiteSpace(PatientCodeSearch))
-                    return;
-
-                IsLoading = true;
                 var patient = await _patientService.GetPatientByCodeAsync(PatientCodeSearch.Trim());
-                
                 if (patient != null)
                 {
                     SelectedPatient = patient;
-                    ErrorMessage = string.Empty;
                 }
                 else
                 {
-                    ErrorMessage = "لم يتم العثور على مريض بهذا الكود";
+                    ErrorMessage = "لم يتم العثور على مريض بهذا الكود.";
                     SelectedPatient = null;
+                    TestResults.Clear();
                 }
             }
             catch (Exception ex)
             {
-                ErrorMessage = $"خطأ في البحث: {ex.Message}";
+                ErrorMessage = $"خطأ في البحث بالكود: {ex.Message}";
             }
             finally
             {
@@ -396,15 +422,13 @@ namespace OGRALAB.ViewModels
             }
         }
 
-        /// <summary>
-        /// البحث عن المرضى حسب المعايير
-        /// </summary>
         private async Task SearchPatientsAsync()
         {
+            IsLoading = true;
+            ErrorMessage = string.Empty;
+            SuccessMessage = string.Empty;
             try
             {
-                IsLoading = true;
-                
                 var query = _context.Patients
                     .Include(p => p.Doctor)
                     .Include(p => p.Entity)
@@ -412,29 +436,24 @@ namespace OGRALAB.ViewModels
                         .ThenInclude(tr => tr.Test)
                     .AsQueryable();
 
-                // تطبيق الفلاتر
                 if (!string.IsNullOrWhiteSpace(PatientNameSearch))
                 {
                     var name = PatientNameSearch.Trim().ToLower();
                     query = query.Where(p => p.FullName.ToLower().Contains(name));
                 }
-
                 if (GenderFilter.HasValue)
                 {
                     query = query.Where(p => p.Gender == GenderFilter.Value);
                 }
-
                 if (!string.IsNullOrWhiteSpace(DoctorFilter))
                 {
                     var doctorName = DoctorFilter.Trim().ToLower();
                     query = query.Where(p => p.Doctor != null && p.Doctor.FullName.ToLower().Contains(doctorName));
                 }
-
                 if (AgeFromFilter.HasValue)
                 {
                     query = query.Where(p => p.Age >= AgeFromFilter.Value);
                 }
-
                 if (AgeToFilter.HasValue)
                 {
                     query = query.Where(p => p.Age <= AgeToFilter.Value);
@@ -442,16 +461,21 @@ namespace OGRALAB.ViewModels
 
                 var results = await query
                     .OrderByDescending(p => p.CreatedDate)
-                    .Take(100) // تحديد عدد النتائج لتحسين الأداء
+                    .Take(100)
                     .ToListAsync();
 
                 SearchResults.Clear();
                 foreach (var patient in results)
                     SearchResults.Add(patient);
+
+                if (!results.Any())
+                {
+                    ErrorMessage = "لم يتم العثور على مرضى يطابقون معايير البحث.";
+                }
             }
             catch (Exception ex)
             {
-                ErrorMessage = $"خطأ في البحث: {ex.Message}";
+                ErrorMessage = $"خطأ في البحث المتقدم: {ex.Message}";
             }
             finally
             {
@@ -459,44 +483,43 @@ namespace OGRALAB.ViewModels
             }
         }
 
-        /// <summary>
-        /// تحميل نتائج فحوصات المريض المختار
-        /// </summary>
         private async void LoadPatientTestResults()
         {
+            if (SelectedPatient == null)
+            {
+                TestResults.Clear();
+                return;
+            }
+
+            IsLoading = true;
+            ErrorMessage = string.Empty;
+            SuccessMessage = string.Empty;
             try
             {
-                if (SelectedPatient == null) return;
-
-                IsLoading = true;
-                
-                // الحصول على طلبات الفحوصات للمريض
                 var testRequests = await _context.TestRequests
                     .Include(tr => tr.Test)
-                    .Include(tr => tr.TestResult)
+                    .Include(tr => tr.TestResult!)
                     .Where(tr => tr.PatientId == SelectedPatient.Id)
-                    .OrderBy(tr => tr.Test.Category)
-                    .ThenBy(tr => tr.Test.DisplayOrder)
+                    .OrderBy(tr => tr.Test != null ? tr.Test.Category : "")
+                    .ThenBy(tr => tr.Test != null ? tr.Test.DisplayOrder : 0)
                     .ToListAsync();
 
                 TestResults.Clear();
-                
                 foreach (var request in testRequests)
                 {
-                    // إنشاء نتيجة فحص إذا لم تكن موجودة
                     if (request.TestResult == null)
                     {
                         request.TestResult = new TestResult
                         {
                             TestRequestId = request.Id,
                             TestId = request.TestId,
-                            Test = request.Test,
-                            TestRequest = request,
-                            Flag = TestFlag.Normal,
-                            Unit = request.Test?.Unit ?? "",
-                            AppliedNormalRange = GetAppliedNormalRange(request.Test, SelectedPatient)
+                            // Test, TestRequest are navigation properties, EF handles them.
+                            // Default values from TestResult constructor will be used for string properties.
+                            AppliedNormalRange = GetAppliedNormalRange(request.Test, SelectedPatient) ?? string.Empty
                         };
                     }
+                    if (request.TestResult.Test == null) request.TestResult.Test = request.Test;
+                    if (request.TestResult.TestRequest == null) request.TestResult.TestRequest = request;
 
                     var resultItem = new TestResultItem(request.TestResult);
                     TestResults.Add(resultItem);
@@ -504,7 +527,7 @@ namespace OGRALAB.ViewModels
             }
             catch (Exception ex)
             {
-                ErrorMessage = $"خطأ في تحميل نتائج الفحوصات: {ex.Message}";
+                ErrorMessage = $"خطأ في تحميل فحوصات المريض: {ex.Message}";
             }
             finally
             {
@@ -512,47 +535,56 @@ namespace OGRALAB.ViewModels
             }
         }
 
-        /// <summary>
-        /// تحديد المعدل الطبيعي المناسب للمريض
-        /// </summary>
-        private string GetAppliedNormalRange(Test? test, Patient patient)
+        private string? GetAppliedNormalRange(Test? test, Patient? patient)
         {
-            if (test == null) return "";
+            if (test == null || patient == null) return string.Empty; // Return string.Empty for non-nullable assignment later
 
-            if (patient.AgeUnit == AgeUnit.Years && patient.Age < 18)
+            if (patient.AgeUnit == AgeUnit.Years && patient.Age < 18 && !string.IsNullOrEmpty(test.NormalRangeChildren))
             {
                 return test.NormalRangeChildren;
             }
-            else if (patient.Gender == Gender.Male)
+            else if (patient.Gender == Gender.Male && !string.IsNullOrEmpty(test.NormalRangeMale))
             {
                 return test.NormalRangeMale;
             }
-            else if (patient.Gender == Gender.Female)
+            else if (patient.Gender == Gender.Female && !string.IsNullOrEmpty(test.NormalRangeFemale))
             {
                 return test.NormalRangeFemale;
             }
-            else
-            {
-                return test.NormalRangeMale; // افتراضي
-            }
+            return !string.IsNullOrEmpty(test.NormalRangeMale) ? test.NormalRangeMale : (!string.IsNullOrEmpty(test.NormalRangeFemale) ? test.NormalRangeFemale : string.Empty);
         }
 
-        /// <summary>
-        /// حفظ النتائج
-        /// </summary>
         private async Task SaveResultsAsync()
         {
+            IsLoading = true;
+            ErrorMessage = string.Empty;
+            SuccessMessage = string.Empty;
             try
             {
-                IsLoading = true;
-                ErrorMessage = string.Empty;
+                if (SelectedPatient == null || !TestResults.Any())
+                {
+                    ErrorMessage = "لا يوجد مريض محدد أو نتائج لحفظها.";
+                    return;
+                }
 
                 foreach (var resultItem in TestResults)
                 {
-                    await _resultService.SaveTestResultAsync(resultItem.TestResult, "Current User");
-                }
+                    // Ensure TestResult values are correctly propagated from TestResultItem
+                    resultItem.TestResult.TextResult = resultItem.TextResultValue ?? string.Empty;
+                    resultItem.TestResult.Comments = resultItem.CommentsValue ?? string.Empty;
+                    // Other properties like NumericResult, Flag, IsCompleted, IsReviewed are already updated in TestResultItem setters
 
-                SuccessMessage = "تم حفظ النتائج بنجاح";
+                    if (_context.Entry(resultItem.TestResult).State == EntityState.Detached)
+                    {
+                        // If it's truly new and not just detached (e.g., created in LoadPatientTestResults and not yet added)
+                        // _context.TestResults.Add(resultItem.TestResult);
+                        // else, for existing but detached
+                        _context.TestResults.Update(resultItem.TestResult);
+                    }
+                    // If already tracked, changes will be saved by SaveChangesAsync
+                }
+                await _context.SaveChangesAsync();
+                SuccessMessage = "تم حفظ النتائج بنجاح.";
             }
             catch (Exception ex)
             {
@@ -563,82 +595,74 @@ namespace OGRALAB.ViewModels
                 IsLoading = false;
             }
         }
+        private bool CanSaveResults() => SelectedPatient != null && TestResults.Any() && !IsLoading;
 
-        private bool CanSaveResults() => SelectedPatient != null && TestResults.Count > 0 && !IsLoading;
-
-        /// <summary>
-        /// مراجعة النتيجة المختارة
-        /// </summary>
         private async Task ReviewResultAsync()
         {
+            ErrorMessage = string.Empty;
+            SuccessMessage = string.Empty;
+
+            if (SelectedTestResult == null || SelectedTestResult.TestResult == null)
+            {
+                ErrorMessage = "يرجى تحديد نتيجة لمراجعتها.";
+                return;
+            }
+
+            // The TestResultId is the PK from the database (TestResult.Id)
+            // If it's 0, it means the TestResult entity itself is likely new and not saved yet.
+            // The warning CS8601 at line 520 might have been related to SelectedTestResult.TestResult.Id
+            // if the analyzer couldn't guarantee SelectedTestResult.TestResult wasn't null.
+            // The check above handles this.
+            if (SelectedTestResult.TestResultId == 0)
+            {
+                ErrorMessage = "النتيجة المحددة غير محفوظة بعد أو غير صالحة للمراجعة.";
+                return;
+            }
+
+            IsLoading = true;
             try
             {
-                if (SelectedTestResult?.TestResult?.Id == null) return;
+                var success = await _resultService.ReviewTestResultAsync(SelectedTestResult.TestResultId, "CurrentUser");
 
-                IsLoading = true;
-                var success = await _resultService.ReviewTestResultAsync(SelectedTestResult.TestResult.Id, "Current User");
-                
                 if (success)
                 {
                     SelectedTestResult.IsReviewed = true;
-                    SuccessMessage = "تم مراجعة النتيجة بنجاح";
+                    SuccessMessage = "تمت مراجعة النتيجة بنجاح.";
                 }
                 else
                 {
-                    ErrorMessage = "فشل في مراجعة النتيجة";
+                    ErrorMessage = "فشلت عملية مراجعة النتيجة.";
                 }
             }
             catch (Exception ex)
             {
-                ErrorMessage = $"خطأ في مراجعة النتيجة: {ex.Message}";
+                ErrorMessage = $"خطأ أثناء مراجعة النتيجة: {ex.Message}";
             }
             finally
             {
                 IsLoading = false;
             }
         }
+        private bool CanReviewResult() => SelectedTestResult != null && !SelectedTestResult.IsReviewed && !IsLoading && SelectedTestResult.TestResultId != 0;
 
-        private bool CanReviewResult() => SelectedTestResult != null && !SelectedTestResult.IsReviewed && !IsLoading;
-
-        /// <summary>
-        /// طباعة النتائج
-        /// </summary>
         private void PrintResults()
         {
-            try
-            {
-                // سيتم تنفيذها لاحقاً
-                SuccessMessage = "جاري العمل على ميزة الطباعة";
-            }
-            catch (Exception ex)
-            {
-                ErrorMessage = $"خطأ في الطباعة: {ex.Message}";
-            }
+            SuccessMessage = string.Empty;
+            ErrorMessage = string.Empty;
+            if (!CanPrintResults()) return;
+            SuccessMessage = "جاري تجهيز التقرير للطباعة...";
         }
+        private bool CanPrintResults() => SelectedPatient != null && TestResults.Any() && !IsLoading;
 
-        private bool CanPrintResults() => SelectedPatient != null && TestResults.Count > 0;
-
-        /// <summary>
-        /// تصدير النتائج
-        /// </summary>
         private void ExportResults()
         {
-            try
-            {
-                // سيتم تنفيذها لاحقاً
-                SuccessMessage = "جاري العمل على ميزة التصدير";
-            }
-            catch (Exception ex)
-            {
-                ErrorMessage = $"خطأ في التصدير: {ex.Message}";
-            }
+            SuccessMessage = string.Empty;
+            ErrorMessage = string.Empty;
+            if (!CanExportResults()) return;
+            SuccessMessage = "جاري تجهيز البيانات للتصدير...";
         }
+        private bool CanExportResults() => SelectedPatient != null && TestResults.Any() && !IsLoading;
 
-        private bool CanExportResults() => SelectedPatient != null && TestResults.Count > 0;
-
-        /// <summary>
-        /// مسح الفلاتر
-        /// </summary>
         private void ClearFilters()
         {
             PatientCodeSearch = string.Empty;
@@ -647,9 +671,11 @@ namespace OGRALAB.ViewModels
             DoctorFilter = string.Empty;
             AgeFromFilter = null;
             AgeToFilter = null;
-            
+
             SearchResults.Clear();
             SelectedPatient = null;
+            ErrorMessage = string.Empty;
+            SuccessMessage = string.Empty;
         }
     }
 }

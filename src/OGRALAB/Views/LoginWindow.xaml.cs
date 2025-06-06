@@ -2,212 +2,151 @@ using System;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
-using System.Windows.Media;
-using OGRALAB.ViewModels;
+using OGRALAB.ViewModels; // تأكد أن هذا السطر موجود لاستخدام LoginViewModel
 
 namespace OGRALAB.Views
 {
     public partial class LoginWindow : Window
     {
-        private readonly LoginViewModel? _viewModel;
-        private bool _isUpdatingPassword;
-
-        public LoginWindow()
+        public LoginWindow(LoginViewModel viewModel)
         {
             InitializeComponent();
+            DataContext = viewModel ?? throw new ArgumentNullException(nameof(viewModel));
             Loaded += LoginWindow_Loaded;
-        }
-
-        public LoginWindow(LoginViewModel viewModel) : this()
-        {
-            _viewModel = viewModel;
-            DataContext = _viewModel;
         }
 
         private void LoginWindow_Loaded(object sender, RoutedEventArgs e)
         {
-            // Set focus to username field
-            UsernameComboBox.Focus();
-
-            // Handle password box events
-            PasswordBox.PasswordChanged += PasswordBox_PasswordChanged;
-
-            // Handle Enter key press
+            if (DataContext is LoginViewModel vm)
+            {
+                vm.PropertyChanged += ViewModel_PropertyChanged;
+                UpdatePasswordFieldsVisibilityAndFocus(vm.IsPasswordVisible, true);
+            }
+            PasswordBoxField.PasswordChanged += PasswordBoxField_PasswordChanged;
             KeyDown += LoginWindow_KeyDown;
-
-            // Subscribe to property changes if ViewModel is available
-            if (_viewModel != null)
-            {
-                _viewModel.PropertyChanged += ViewModel_PropertyChanged;
-            }
-        }
-
-        private void PasswordBox_PasswordChanged(object sender, RoutedEventArgs e)
-        {
-            if (_viewModel != null && !_isUpdatingPassword && sender is PasswordBox passwordBox)
-            {
-                _isUpdatingPassword = true;
-                try
-                {
-                    _viewModel.Password = passwordBox.Password;
-                }
-                finally
-                {
-                    _isUpdatingPassword = false;
-                }
-            }
-        }
-
-        private void PasswordTextBox_TextChanged(object sender, TextChangedEventArgs e)
-        {
-            if (_viewModel != null && !_isUpdatingPassword && sender is TextBox textBox)
-            {
-                _isUpdatingPassword = true;
-                try
-                {
-                    _viewModel.Password = textBox.Text;
-                    if (!_viewModel.IsPasswordVisible)
-                    {
-                        PasswordBox.Password = textBox.Text;
-                    }
-                }
-                finally
-                {
-                    _isUpdatingPassword = false;
-                }
-            }
         }
 
         private void LoginWindow_KeyDown(object sender, KeyEventArgs e)
         {
-            if (e.Key == Key.Enter)
+            if (e.Key == Key.Enter && DataContext is LoginViewModel vm)
             {
-                if (_viewModel?.LoginCommand.CanExecute(null) == true)
+                if (vm.LoginCommand.CanExecute(null))
                 {
-                    _viewModel.LoginCommand.Execute(null);
+                    vm.LoginCommand.Execute(null);
                 }
             }
         }
 
         private void ViewModel_PropertyChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
         {
-            if (e.PropertyName == nameof(LoginViewModel.IsPasswordVisible))
+            if (DataContext is LoginViewModel vm)
             {
-                UpdatePasswordVisibility();
-            }
-            else if (e.PropertyName == nameof(LoginViewModel.StatusMessage))
-            {
-                UpdateStatusMessage();
-            }
-            else if (e.PropertyName == nameof(LoginViewModel.IsLoggingIn))
-            {
-                UpdateLoadingIndicator();
-            }
-            else if (e.PropertyName == nameof(LoginViewModel.Password) && !_isUpdatingPassword)
-            {
-                UpdatePasswordControls();
+                switch (e.PropertyName)
+                {
+                    case nameof(LoginViewModel.IsPasswordVisible):
+                        UpdatePasswordFieldsVisibilityAndFocus(vm.IsPasswordVisible, false);
+                        break;
+                    case nameof(LoginViewModel.Password):
+                        if (!PasswordBoxField.IsKeyboardFocusWithin && !PasswordTextBoxField.IsKeyboardFocusWithin)
+                        {
+                            PasswordBoxField.Password = vm.Password;
+                            PasswordTextBoxField.Text = vm.Password;
+                        }
+                        else if (vm.IsPasswordVisible && PasswordTextBoxField.Text != vm.Password)
+                        {
+                            PasswordTextBoxField.Text = vm.Password;
+                        }
+                        else if (!vm.IsPasswordVisible && PasswordBoxField.Password != vm.Password)
+                        {
+                            PasswordBoxField.Password = vm.Password;
+                        }
+                        break;
+                    case nameof(LoginViewModel.StatusMessage):
+                        // UpdateStatusMessageDisplay(vm); // *** تم التعليق: لم نعد نعرض StatusMessageBorder ***
+                        break;
+                    case nameof(LoginViewModel.IsLoggingIn):
+                        // UpdateLoadingIndicatorDisplay(vm); // *** تم التعليق: لم نعد نعرض LoadingBorder ***
+                        break;
+                }
             }
         }
 
-        private void UpdatePasswordControls()
+        private void UpdatePasswordFieldsVisibilityAndFocus(bool isPasswordVisible, bool isInitialLoad)
         {
-            if (_viewModel == null) return;
-
-            _isUpdatingPassword = true;
-            try
+            if (isPasswordVisible)
             {
-                if (_viewModel.IsPasswordVisible)
-                {
-                    PasswordTextBox.Text = _viewModel.Password;
-                }
-                else
-                {
-                    PasswordBox.Password = _viewModel.Password;
-                }
+                PasswordBoxField.Visibility = Visibility.Collapsed;
+                PasswordTextBoxField.Visibility = Visibility.Visible;
+                PasswordTextBoxField.Focus();
+                PasswordTextBoxField.CaretIndex = PasswordTextBoxField.Text?.Length ?? 0;
             }
-            finally
+            else
             {
-                _isUpdatingPassword = false;
+                PasswordTextBoxField.Visibility = Visibility.Collapsed;
+                PasswordBoxField.Visibility = Visibility.Visible;
+                if (!isInitialLoad || !string.IsNullOrEmpty(UsernameComboBox.Text))
+                {
+                    PasswordBoxField.Focus();
+                }
+                else if (isInitialLoad && string.IsNullOrEmpty(UsernameComboBox.Text))
+                {
+                    UsernameComboBox.Focus();
+                }
             }
         }
 
-        private void UpdatePasswordVisibility()
+        private void PasswordBoxField_PasswordChanged(object sender, RoutedEventArgs e)
         {
-            if (_viewModel == null) return;
-
-            _isUpdatingPassword = true;
-            try
+            if (DataContext is LoginViewModel vm && sender is PasswordBox pb)
             {
-                if (_viewModel.IsPasswordVisible)
+                if (!vm.IsPasswordVisible)
                 {
-                    PasswordTextBox.Text = PasswordBox.Password;
-                    PasswordBox.Visibility = Visibility.Collapsed;
-                    PasswordTextBox.Visibility = Visibility.Visible;
-                    PasswordTextBox.Focus();
-                }
-                else
-                {
-                    PasswordBox.Password = PasswordTextBox.Text;
-                    PasswordBox.Visibility = Visibility.Visible;
-                    PasswordTextBox.Visibility = Visibility.Collapsed;
-                    PasswordBox.Focus();
-                }
-            }
-            finally
-            {
-                _isUpdatingPassword = false;
-            }
-        }
-
-        private void UpdateStatusMessage()
-        {
-            if (_viewModel != null)
-            {
-                bool hasMessage = !string.IsNullOrEmpty(_viewModel.StatusMessage);
-                StatusMessageBorder.Visibility = hasMessage ? Visibility.Visible : Visibility.Collapsed;
-
-                // Change color based on message type
-                if (hasMessage)
-                {
-                    if (_viewModel.StatusMessage.Contains("successful") || _viewModel.StatusMessage.Contains("success"))
+                    if (vm.Password != pb.Password)
                     {
-                        StatusMessageBorder.Background = (SolidColorBrush)FindResource("SuccessColor");
-                    }
-                    else if (_viewModel.StatusMessage.Contains("Authenticating"))
-                    {
-                        StatusMessageBorder.Background = (SolidColorBrush)FindResource("SecondaryColor");
-                    }
-                    else
-                    {
-                        StatusMessageBorder.Background = (SolidColorBrush)FindResource("ErrorColor");
+                        vm.Password = pb.Password;
                     }
                 }
             }
         }
 
-        private void UpdateLoadingIndicator()
+        // *** الدالة التالية لم تعد ضرورية ويمكن حذفها بالكامل أو تعليقها ***
+        /*
+        private void UpdateStatusMessageDisplay(LoginViewModel vm)
         {
-            if (_viewModel != null)
-            {
-                LoadingBorder.Visibility = _viewModel.IsLoggingIn
-                    ? Visibility.Visible
-                    : Visibility.Collapsed;
-            }
+            // هذا الكود كان يتحكم في StatusMessageBorder
+            // بما أن StatusMessageBorder مخفي دائمًا الآن في XAML، فهذه الدالة لم تعد تفعل شيئًا مرئيًا
+            // bool hasMessage = !string.IsNullOrEmpty(vm.StatusMessage);
+            // StatusMessageBorder.Visibility = hasMessage ? Visibility.Visible : Visibility.Collapsed;
+            // if (hasMessage)
+            // {
+            //     if (vm.StatusMessage.Contains("successful", StringComparison.OrdinalIgnoreCase))
+            //         StatusMessageBorder.Background = (System.Windows.Media.Brush)FindResource("SuccessColor");
+            //     else if (vm.StatusMessage.Contains("Authenticating", StringComparison.OrdinalIgnoreCase))
+            //         StatusMessageBorder.Background = (System.Windows.Media.Brush)FindResource("SecondaryColor");
+            //     else
+            //         StatusMessageBorder.Background = (System.Windows.Media.Brush)FindResource("ErrorColor");
+            // }
         }
+        */
+
+        // *** الدالة التالية لم تعد ضرورية ويمكن حذفها بالكامل أو تعليقها ***
+        /*
+        private void UpdateLoadingIndicatorDisplay(LoginViewModel vm)
+        {
+            // هذا الكود كان يتحكم في LoadingBorder
+            // بما أن LoadingBorder مخفي دائمًا الآن في XAML، فهذه الدالة لم تعد تفعل شيئًا مرئيًا
+            // LoadingBorder.Visibility = vm.IsLoggingIn ? Visibility.Visible : Visibility.Collapsed;
+        }
+        */
 
         protected override void OnClosed(EventArgs e)
         {
-            // Cleanup
-            if (PasswordBox != null)
+            if (DataContext is LoginViewModel vm)
             {
-                PasswordBox.PasswordChanged -= PasswordBox_PasswordChanged;
+                vm.PropertyChanged -= ViewModel_PropertyChanged;
             }
-            if (_viewModel != null)
-            {
-                _viewModel.PropertyChanged -= ViewModel_PropertyChanged;
-            }
+            PasswordBoxField.PasswordChanged -= PasswordBoxField_PasswordChanged;
             KeyDown -= LoginWindow_KeyDown;
-
             base.OnClosed(e);
         }
     }

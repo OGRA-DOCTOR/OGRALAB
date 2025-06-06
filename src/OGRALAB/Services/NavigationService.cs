@@ -1,71 +1,121 @@
+using Microsoft.Extensions.DependencyInjection;
+using OGRALAB.ViewModels;
+using OGRALAB.Views;
 using System;
+using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
-using OGRALAB.Views;
 
 namespace OGRALAB.Services
 {
-    /// <summary>
-    /// خدمة التنقل بين المحتويات المختلفة في التطبيق
-    /// </summary>
     public class NavigationService : INavigationService
     {
         private UserControl? _currentContent;
+        private readonly IServiceProvider _serviceProvider;
 
-        /// <summary>
-        /// حدث يتم إطلاقه عند تغيير المحتوى
-        /// </summary>
         public event EventHandler<UserControl>? ContentChanged;
 
-        /// <summary>
-        /// الحصول على المحتوى الحالي
-        /// </summary>
-        public UserControl? CurrentContent 
-        { 
+        public NavigationService(IServiceProvider serviceProvider)
+        {
+            _serviceProvider = serviceProvider ?? throw new ArgumentNullException(nameof(serviceProvider));
+        }
+
+        public UserControl? CurrentContent
+        {
             get => _currentContent;
             private set
             {
-                _currentContent = value;
-                if (value != null)
-                    ContentChanged?.Invoke(this, value);
+                if (_currentContent != value)
+                {
+                    _currentContent = value;
+                    // *** تعديل هنا لمعالجة التحذير ***
+                    if (_currentContent != null)
+                    {
+                        ContentChanged?.Invoke(this, _currentContent);
+                    }
+                    else
+                    {
+                        // يمكنك اختيار إطلاق الحدث مع null إذا كان هذا هو السلوك المطلوب
+                        // أو ببساطة عدم إطلاقه إذا كان المحتوى null
+                        // ContentChanged?.Invoke(this, null); // إذا أردت إعلام المشتركين بأن المحتوى أصبح null
+                    }
+                }
             }
         }
 
-        /// <summary>
-        /// التنقل إلى محتوى جديد
-        /// </summary>
-        /// <param name="content">المحتوى المراد عرضه</param>
         public void NavigateTo(UserControl content)
         {
-            if (content != null)
+            CurrentContent = content;
+        }
+
+        public void NavigateToDashboard()
+        {
+            NavigateToView("Dashboard");
+        }
+
+        public void NavigateToView(string viewName)
+        {
+            try
             {
-                CurrentContent = content;
+                UserControl? viewToNavigate = null;
+
+                switch (viewName)
+                {
+                    case "Dashboard":
+                        var dashboardViewModel = _serviceProvider.GetRequiredService<DashboardViewModel>();
+                        var dashboardControl = _serviceProvider.GetRequiredService<DashboardUserControl>();
+                        dashboardControl.DataContext = dashboardViewModel;
+                        viewToNavigate = dashboardControl;
+                        break;
+
+                    case "AddPatient":
+                        var addPatientViewModel = _serviceProvider.GetRequiredService<AddPatientViewModel>();
+                        var addPatientControl = _serviceProvider.GetRequiredService<AddPatientUserControl>();
+                        addPatientControl.DataContext = addPatientViewModel;
+                        viewToNavigate = addPatientControl;
+                        break;
+
+                    case "EnterResults":
+                        var enterResultsViewModel = _serviceProvider.GetRequiredService<EnterResultsViewModel>();
+                        var enterResultsControl = _serviceProvider.GetRequiredService<EnterResultsUserControl>();
+                        enterResultsControl.DataContext = enterResultsViewModel;
+                        viewToNavigate = enterResultsControl;
+                        break;
+
+                    default:
+                        MessageBox.Show($"View '{viewName}' not found.", "Navigation Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                        break;
+                }
+
+                if (viewToNavigate != null)
+                {
+                    NavigateTo(viewToNavigate);
+                }
+            }
+            catch (Exception ex)
+            {
+                ErrorLogger.Log(ex, $"NavigationService.NavigateToView({viewName})");
+                MessageBox.Show($"Error navigating to view '{viewName}': {ex.Message}", "Navigation Error", MessageBoxButton.OK, MessageBoxImage.Error);
             }
         }
 
-        /// <summary>
-        /// التنقل إلى لوحة المعلومات
-        /// </summary>
-        public void NavigateToDashboard()
-        {
-            var dashboardControl = new DashboardUserControl();
-            NavigateTo(dashboardControl);
-        }
-
-        /// <summary>
-        /// تسجيل الخروج من التطبيق
-        /// </summary>
         public void Logout()
         {
             try
             {
-                // إغلاق التطبيق
-                Application.Current.Shutdown();
+                var loginWindow = _serviceProvider.GetRequiredService<LoginWindow>();
+
+                var mainWindow = Application.Current.Windows.OfType<MainWindow>().FirstOrDefault();
+                mainWindow?.Close();
+
+                Application.Current.MainWindow = loginWindow;
+                loginWindow.Show();
+                CurrentContent = null;
             }
             catch (Exception ex)
             {
                 ErrorLogger.Log(ex, "NavigationService.Logout");
-                throw;
+                MessageBox.Show($"Error during logout: {ex.Message}", "Logout Error", MessageBoxButton.OK, MessageBoxImage.Error);
             }
         }
     }

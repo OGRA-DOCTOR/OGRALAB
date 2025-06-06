@@ -16,37 +16,45 @@ namespace OGRALAB
 {
     public partial class App : Application
     {
-        private IHost? _host;
+        public static IHost? AppHost { get; private set; }
+
+        public App()
+        {
+            // InitializeComponent();
+        }
 
         protected override async void OnStartup(StartupEventArgs e)
         {
+            base.OnStartup(e);
+
             if (!SingleInstanceService.IsFirstInstance())
             {
                 MessageBox.Show("OGRALAB is already running.", "Application Already Running",
                               MessageBoxButton.OK, MessageBoxImage.Information);
                 SingleInstanceService.BringExistingInstanceToFront();
-                Shutdown();
+                Current.Shutdown();
                 return;
             }
 
             try
             {
                 var configuration = BuildConfiguration();
-                _host = CreateHostBuilder(configuration).Build();
-                await _host.StartAsync();
+                AppHost = CreateHostBuilder(configuration).Build();
+                await AppHost.StartAsync();
 
-                // Initialize database using the host's service provider
-                await InitializeDatabaseAsync(_host.Services);
+                Current.Resources["ServiceProvider"] = AppHost.Services;
 
-                // Resolve and show LoginWindow from the host's services
-                var loginWindow = _host.Services.GetRequiredService<LoginWindow>();
+                await InitializeDatabaseAsync(AppHost.Services);
+
+                var loginWindow = AppHost.Services.GetRequiredService<LoginWindow>();
+                Current.MainWindow = loginWindow;
                 loginWindow.Show();
             }
             catch (Exception ex)
             {
                 MessageBox.Show($"Application startup failed: {ex.Message}\n\n{ex.StackTrace}", "Startup Error",
                               MessageBoxButton.OK, MessageBoxImage.Error);
-                Shutdown();
+                Current.Shutdown();
             }
         }
 
@@ -54,10 +62,10 @@ namespace OGRALAB
         {
             try
             {
-                if (_host != null)
+                if (AppHost != null)
                 {
-                    await _host.StopAsync();
-                    _host.Dispose();
+                    await AppHost.StopAsync();
+                    AppHost.Dispose();
                 }
                 SingleInstanceService.ReleaseMutex();
             }
@@ -86,12 +94,10 @@ namespace OGRALAB
                     services.AddSingleton(configuration);
 
                     services.AddDbContext<OgralabDbContext>(options =>
-                        options.UseSqlite(configuration.GetConnectionString("DefaultConnection")));
+                        options.UseSqlite(configuration.GetConnectionString("DefaultConnection")), ServiceLifetime.Scoped);
 
                     services.AddScoped<IAuthenticationService, AuthenticationService>();
                     services.AddScoped<INavigationService, NavigationService>();
-                    
-                    // New Phase 3 Services
                     services.AddScoped<PatientService>();
                     services.AddScoped<TestService>();
                     services.AddScoped<ResultService>();
@@ -99,18 +105,19 @@ namespace OGRALAB
                     services.AddTransient<LoginViewModel>();
                     services.AddTransient<MainViewModel>();
                     services.AddTransient<DashboardViewModel>();
-                    
-                    // New Phase 3 ViewModels
                     services.AddTransient<AddPatientViewModel>();
-                    services.AddTransient<EnterResultsViewModel>();
+                    services.AddTransient<EnterResultsViewModel>(); // ViewModel مسجل وهو المطلوب
 
                     services.AddTransient<LoginWindow>();
                     services.AddTransient<MainWindow>();
+                    // services.AddTransient<AddPatientWindow>(); // معلق لأنه UserControl الآن
+                    // *** تم تعليق السطر التالي لأنه سيصبح UserControl ***
+                    // services.AddTransient<EnterResultsWindow>(); 
+
                     services.AddTransient<DashboardUserControl>();
-                    
-                    // New Phase 3 Windows
-                    services.AddTransient<AddPatientWindow>();
-                    services.AddTransient<EnterResultsWindow>();
+                    services.AddTransient<AddPatientUserControl>();
+                    services.AddTransient<EnterResultsUserControl>(); // *** إضافة تسجيل UserControl الجديد ***
+
 
                     services.AddLogging(configure =>
                     {
@@ -151,7 +158,6 @@ namespace OGRALAB
         private string? GetDataSourceFromConnectionString(string? connectionString)
         {
             if (string.IsNullOrEmpty(connectionString)) return null;
-
             var parts = connectionString.Split(';');
             foreach (var part in parts)
             {

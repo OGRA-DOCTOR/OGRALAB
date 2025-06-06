@@ -1,80 +1,80 @@
 using System.Collections.ObjectModel;
-using System.Windows;
 using System.Windows.Controls;
 using OGRALAB.Commands;
 using OGRALAB.Models;
 using OGRALAB.Services;
-using OGRALAB.Views;
+using System;
+using System.Linq;
+// using OGRALAB.Views; // قد لا يكون هذا مطلوبًا هنا إذا كان NavigationService يعتني بإنشاء Views
 
 namespace OGRALAB.ViewModels
 {
-    /// <summary>
-    /// نموذج عرض النافذة الرئيسية مع قائمة التنقل الجانبية
-    /// </summary>
     public class MainViewModel : BaseViewModel
     {
-        private readonly User _currentUser;
+        private User? _currentUser;
         private readonly INavigationService _navigationService;
         private string _welcomeMessage = string.Empty;
         private UserControl? _currentContent;
         private NavigationItem? _selectedMenuItem;
+        private bool _showDashboardStats;
 
-        public MainViewModel(User currentUser, INavigationService navigationService)
+        public MainViewModel(INavigationService navigationService)
         {
-            _currentUser = currentUser;
-            _navigationService = navigationService;
-            
+            _navigationService = navigationService ?? throw new ArgumentNullException(nameof(navigationService));
+            _navigationService.ContentChanged += OnContentChanged;
+        }
+
+        public void InitializeForUser(User currentUser)
+        {
+            _currentUser = currentUser ?? throw new ArgumentNullException(nameof(currentUser));
+            WelcomeMessage = $"مرحباً، {_currentUser.FullName}!";
             InitializeCommands();
             InitializeMenuItems();
-            InitializeNavigation();
-            
-            WelcomeMessage = $"مرحباً، {_currentUser.FullName}!";
+            NavigateToDashboard();
+        }
+
+        private void OnContentChanged(object? sender, UserControl? content)
+        {
+            CurrentContent = content;
         }
 
         #region خصائص
-
         public string WelcomeMessage
         {
             get => _welcomeMessage;
             set => SetProperty(ref _welcomeMessage, value);
         }
 
-        public User CurrentUser => _currentUser;
+        public User? CurrentUser => _currentUser;
 
-        /// <summary>
-        /// المحتوى الحالي المعروض
-        /// </summary>
         public UserControl? CurrentContent
         {
             get => _currentContent;
             set => SetProperty(ref _currentContent, value);
         }
 
-        /// <summary>
-        /// عنصر القائمة المحدد حالياً
-        /// </summary>
         public NavigationItem? SelectedMenuItem
         {
             get => _selectedMenuItem;
-            set 
-            { 
-                SetProperty(ref _selectedMenuItem, value);
-                if (value != null && value.IsEnabled)
+            set
+            {
+                if (SetProperty(ref _selectedMenuItem, value) && value != null && value.IsEnabled)
                 {
                     value.Command?.Execute(null);
                 }
             }
         }
 
-        /// <summary>
-        /// عناصر قائمة التنقل
-        /// </summary>
         public ObservableCollection<NavigationItem> MenuItems { get; private set; } = new ObservableCollection<NavigationItem>();
 
+        public bool ShowDashboardStats
+        {
+            get => _showDashboardStats;
+            set => SetProperty(ref _showDashboardStats, value);
+        }
         #endregion
 
         #region الأوامر
-
         public RelayCommand DashboardCommand { get; private set; } = null!;
         public RelayCommand AddPatientsCommand { get; private set; } = null!;
         public RelayCommand EnterResultsCommand { get; private set; } = null!;
@@ -82,177 +82,100 @@ namespace OGRALAB.ViewModels
         public RelayCommand SearchModifyCommand { get; private set; } = null!;
         public RelayCommand SettingsCommand { get; private set; } = null!;
         public RelayCommand LogoutCommand { get; private set; } = null!;
-
         #endregion
 
         #region طرق التهيئة
-
-        /// <summary>
-        /// تهيئة الأوامر
-        /// </summary>
         private void InitializeCommands()
         {
-            DashboardCommand = new RelayCommand(NavigateToDashboard);
-            AddPatientsCommand = new RelayCommand(NavigateToAddPatients, () => false); // معطل
-            EnterResultsCommand = new RelayCommand(NavigateToEnterResults, () => false); // معطل
-            PreviewReportsCommand = new RelayCommand(NavigateToPreviewReports, () => false); // معطل
-            SearchModifyCommand = new RelayCommand(NavigateToSearchModify, () => false); // معطل
-            SettingsCommand = new RelayCommand(NavigateToSettings, () => false); // معطل
-            LogoutCommand = new RelayCommand(Logout);
+            DashboardCommand = new RelayCommand(NavigateToDashboard, () => _currentUser != null);
+            // *** تعديل: تفعيل الأوامر ***
+            AddPatientsCommand = new RelayCommand(NavigateToAddPatients, () => _currentUser != null);
+            EnterResultsCommand = new RelayCommand(NavigateToEnterResults, () => _currentUser != null);
+
+            // الأوامر الأخرى يمكن تفعيلها بنفس الطريقة عند الحاجة
+            PreviewReportsCommand = new RelayCommand(NavigateToPreviewReports, () => false);
+            SearchModifyCommand = new RelayCommand(NavigateToSearchModify, () => false);
+            SettingsCommand = new RelayCommand(NavigateToSettings, () => false);
+            LogoutCommand = new RelayCommand(Logout, () => _currentUser != null);
         }
 
-        /// <summary>
-        /// تهيئة عناصر القائمة
-        /// </summary>
         private void InitializeMenuItems()
         {
-            MenuItems = new ObservableCollection<NavigationItem>
-            {
-                new NavigationItem 
-                { 
-                    Icon = "📊", 
-                    Title = "لوحة المعلومات", 
-                    Command = DashboardCommand, 
-                    IsEnabled = true,
-                    IsSelected = true 
-                },
-                new NavigationItem 
-                { 
-                    Icon = "👥", 
-                    Title = "إدخال المرضى", 
-                    Command = AddPatientsCommand, 
-                    IsEnabled = false 
-                },
-                new NavigationItem 
-                { 
-                    Icon = "📝", 
-                    Title = "إدخال النتائج", 
-                    Command = EnterResultsCommand, 
-                    IsEnabled = false 
-                },
-                new NavigationItem 
-                { 
-                    Icon = "📄", 
-                    Title = "معاينة وطباعة التقارير", 
-                    Command = PreviewReportsCommand, 
-                    IsEnabled = false 
-                },
-                new NavigationItem 
-                { 
-                    Icon = "🔍", 
-                    Title = "البحث والتعديل", 
-                    Command = SearchModifyCommand, 
-                    IsEnabled = false 
-                },
-                new NavigationItem 
-                { 
-                    Icon = "⚙️", 
-                    Title = "الإعدادات", 
-                    Command = SettingsCommand, 
-                    IsEnabled = false 
-                },
-                new NavigationItem 
-                { 
-                    Icon = "🚪", 
-                    Title = "تسجيل الخروج", 
-                    Command = LogoutCommand, 
-                    IsEnabled = true 
-                }
-            };
+            MenuItems.Clear();
+            if (_currentUser == null) return;
 
-            // تحديد العنصر الافتراضي
-            _selectedMenuItem = MenuItems[0];
+            MenuItems.Add(new NavigationItem { Icon = "📊", Title = "لوحة المعلومات", Command = DashboardCommand, IsEnabled = true, IsSelected = true });
+            // *** تعديل: تفعيل العناصر في القائمة ***
+            MenuItems.Add(new NavigationItem { Icon = "👥", Title = "إدخال المرضى", Command = AddPatientsCommand, IsEnabled = true });
+            MenuItems.Add(new NavigationItem { Icon = "📝", Title = "إدخال النتائج", Command = EnterResultsCommand, IsEnabled = true });
+
+            MenuItems.Add(new NavigationItem { Icon = "📄", Title = "معاينة وطباعة التقارير", Command = PreviewReportsCommand, IsEnabled = false });
+            MenuItems.Add(new NavigationItem { Icon = "🔍", Title = "البحث والتعديل", Command = SearchModifyCommand, IsEnabled = false });
+            MenuItems.Add(new NavigationItem { Icon = "⚙️", Title = "الإعدادات", Command = SettingsCommand, IsEnabled = false });
+            MenuItems.Add(new NavigationItem { Icon = "🚪", Title = "تسجيل الخروج", Command = LogoutCommand, IsEnabled = true });
+
+            SelectedMenuItem = MenuItems.FirstOrDefault(m => m.IsSelected);
         }
-
-        /// <summary>
-        /// تهيئة نظام التنقل
-        /// </summary>
-        private void InitializeNavigation()
-        {
-            _navigationService.ContentChanged += (sender, content) =>
-            {
-                CurrentContent = content;
-            };
-
-            // التنقل إلى لوحة المعلومات افتراضياً
-            _navigationService.NavigateToDashboard();
-        }
-
         #endregion
 
         #region طرق التنقل
-
-        /// <summary>
-        /// التنقل إلى لوحة المعلومات
-        /// </summary>
         private void NavigateToDashboard()
         {
-            _navigationService.NavigateToDashboard();
+            if (_currentUser != null)
+            {
+                _navigationService.NavigateToDashboard(); // هذه ستعرض DashboardUserControl
+                ShowDashboardStats = true;
+            }
         }
-
-        /// <summary>
-        /// التنقل إلى إدخال المرضى (معطل)
-        /// </summary>
         private void NavigateToAddPatients()
         {
-            // معطل حالياً
+            if (_currentUser != null)
+            {
+                // سنحتاج إلى طريقة في NavigationService للتعامل مع هذا
+                // _navigationService.NavigateTo(typeof(AddPatientUserControl)); // أو اسم مشابه للدالة
+                _navigationService.NavigateToView("AddPatient"); // اسم رمزي للواجهة، سنعرفه في NavigationService
+                ShowDashboardStats = false;
+            }
         }
-
-        /// <summary>
-        /// التنقل إلى إدخال النتائج (معطل)
-        /// </summary>
         private void NavigateToEnterResults()
         {
-            // معطل حالياً
+            if (_currentUser != null)
+            {
+                // _navigationService.NavigateTo(typeof(EnterResultsView)); // أو اسم مشابه للدالة
+                _navigationService.NavigateToView("EnterResults"); // اسم رمزي للواجهة
+                ShowDashboardStats = false;
+            }
         }
-
-        /// <summary>
-        /// التنقل إلى معاينة التقارير (معطل)
-        /// </summary>
         private void NavigateToPreviewReports()
         {
-            // معطل حالياً
+            ShowDashboardStats = false;
         }
-
-        /// <summary>
-        /// التنقل إلى البحث والتعديل (معطل)
-        /// </summary>
         private void NavigateToSearchModify()
         {
-            // معطل حالياً
+            ShowDashboardStats = false;
         }
-
-        /// <summary>
-        /// التنقل إلى الإعدادات (معطل)
-        /// </summary>
         private void NavigateToSettings()
         {
-            // معطل حالياً
+            ShowDashboardStats = false;
         }
-
-        /// <summary>
-        /// تسجيل الخروج
-        /// </summary>
         private void Logout()
         {
-            _navigationService.Logout();
+            if (_currentUser != null)
+            {
+                _navigationService.Logout();
+                ShowDashboardStats = false;
+            }
         }
-
         #endregion
     }
 
-    /// <summary>
-    /// عنصر في قائمة التنقل
-    /// </summary>
-    public class NavigationItem : BaseViewModel
+    public class NavigationItem : BaseViewModel // NavigationItem class remains the same
     {
         private bool _isSelected;
-
         public string Icon { get; set; } = string.Empty;
         public string Title { get; set; } = string.Empty;
         public RelayCommand? Command { get; set; }
-        public bool IsEnabled { get; set; } = true;
-
+        public bool IsEnabled { get; set; } = true; // Default to true
         public bool IsSelected
         {
             get => _isSelected;

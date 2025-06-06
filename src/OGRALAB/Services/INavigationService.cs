@@ -30,6 +30,12 @@ namespace OGRALAB.Services
         void NavigateToDashboard();
 
         /// <summary>
+        /// *** دالة جديدة: التنقل إلى واجهة محددة باسمها الرمزي ***
+        /// </summary>
+        /// <param name="viewName">الاسم الرمزي للواجهة (مثل "AddPatient", "EnterResults")</param>
+        void NavigateToView(string viewName); // ***** السطر الجديد المضاف *****
+
+        /// <summary>
         /// تسجيل الخروج من التطبيق
         /// </summary>
         void Logout();

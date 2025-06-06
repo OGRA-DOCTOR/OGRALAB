@@ -1,82 +1,65 @@
 using System;
 using System.Windows;
-using OGRALAB.Models;
-using OGRALAB.Services;
-using OGRALAB.ViewModels;
+using OGRALAB.Models;     // For User
+using OGRALAB.Services;   // For INavigationService
+using OGRALAB.ViewModels; // For MainViewModel
 
 namespace OGRALAB.Views
 {
-    /// <summary>
-    /// النافذة الرئيسية للتطبيق مع قائمة التنقل الجانبية
-    /// </summary>
     public partial class MainWindow : Window
     {
-        private MainViewModel? _viewModel;
-        private INavigationService? _navigationService;
+        // The ViewModel is injected by DI through the constructor
+        // The DataContext will be set to this injected ViewModel
 
-        public MainWindow()
+        // Constructor for DI: receives MainViewModel (which in turn receives User and INavigationService via DI or setup)
+        public MainWindow(MainViewModel viewModel)
         {
             InitializeComponent();
+            DataContext = viewModel ?? throw new ArgumentNullException(nameof(viewModel));
+            // The MainViewModel should handle setting the current user if needed,
+            // possibly through a service or by receiving it in its own constructor.
+            Closed += MainWindow_Closed;
         }
 
-        public MainWindow(User currentUser) : this()
+        // This constructor might still be called by LoginViewModel if MainWindow is not resolved by DI properly.
+        // However, the goal is for DI to create MainWindow.
+        // If this constructor is used, INavigationService will be problematic as shown by the error.
+        // The DI-friendly constructor `MainWindow(MainViewModel viewModel)` is preferred.
+        /*
+        public MainWindow(User currentUser) // This constructor creates dependencies manually
         {
-            InitializeWithUser(currentUser);
-        }
+            InitializeComponent();
+            var navigationService = new NavigationService(); // Problematic: creates new instance without DI
+                                                             // This instance won't have access to the correct ServiceProvider
+                                                             // if it tries to use Application.Current.Resources["ServiceProvider"]
+                                                             // and that resource wasn't set or was set with a different provider.
 
-        public MainWindow(MainViewModel viewModel) : this()
-        {
-            _viewModel = viewModel;
-            DataContext = _viewModel;
-        }
+            // To fix this, if User must be passed, MainWindow should also take INavigationService via DI,
+            // and then MainViewModel can be created.
+            // OR, MainViewModel takes User and INavigationService via DI.
 
-        /// <summary>
-        /// تهيئة النافذة مع المستخدم الحالي
-        /// </summary>
-        /// <param name="currentUser">المستخدم الحالي</param>
-        private void InitializeWithUser(User currentUser)
-        {
-            try
-            {
-                // إنشاء خدمة التنقل
-                _navigationService = new NavigationService();
-                
-                // إنشاء نموذج العرض الرئيسي
-                _viewModel = new MainViewModel(currentUser, _navigationService);
-                DataContext = _viewModel;
-                
-                // تسجيل معالج إغلاق النافذة
-                Closed += MainWindow_Closed;
-            }
-            catch (Exception ex)
-            {
-                ErrorLogger.Log(ex, "MainWindow.InitializeWithUser");
-                MessageBox.Show($"خطأ في تهيئة النافذة الرئيسية: {ex.Message}", 
-                               "خطأ", MessageBoxButton.OK, MessageBoxImage.Error);
-            }
+            var mainViewModel = new MainViewModel(currentUser, navigationService); // navigationService here is the new one
+            DataContext = mainViewModel;
+            Closed += MainWindow_Closed;
         }
+        */
 
-        /// <summary>
-        /// معالج إغلاق النافذة
-        /// </summary>
+
         private void MainWindow_Closed(object? sender, EventArgs e)
         {
-            try
+            // ViewModel cleanup can be handled by the ViewModel's own disposable pattern if needed,
+            // or if it has specific resources to release.
+            // For simple ViewModels, this might not be strictly necessary.
+            if (DataContext is IDisposable disposable)
             {
-                // تنظيف الموارد
-                _viewModel = null;
-                _navigationService = null;
-            }
-            catch (Exception ex)
-            {
-                ErrorLogger.Log(ex, "MainWindow.MainWindow_Closed");
+                disposable.Dispose();
             }
         }
 
-        protected override void OnClosed(EventArgs e)
-        {
-            // تنظيف إضافي إذا لزم الأمر
-            base.OnClosed(e);
-        }
+        // OnClosed is fine as is.
+        // protected override void OnClosed(EventArgs e)
+        // {
+        //     base.OnClosed(e);
+        // }
     }
 }
