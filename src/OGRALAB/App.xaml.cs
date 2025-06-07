@@ -52,6 +52,7 @@ namespace OGRALAB
             }
             catch (Exception ex)
             {
+                // لاحقًا، سنستخدم مسجل الأخطاء هنا بدلاً من MessageBox
                 MessageBox.Show($"Application startup failed: {ex.Message}\n\n{ex.StackTrace}", "Startup Error",
                               MessageBoxButton.OK, MessageBoxImage.Error);
                 Current.Shutdown();
@@ -93,32 +94,44 @@ namespace OGRALAB
                 {
                     services.AddSingleton(configuration);
 
+                    // تسجيل قاعدة البيانات
                     services.AddDbContext<OgralabDbContext>(options =>
                         options.UseSqlite(configuration.GetConnectionString("DefaultConnection")), ServiceLifetime.Scoped);
 
+                    // تسجيل الخدمات (Services)
                     services.AddScoped<IAuthenticationService, AuthenticationService>();
                     services.AddScoped<INavigationService, NavigationService>();
                     services.AddScoped<PatientService>();
                     services.AddScoped<TestService>();
                     services.AddScoped<ResultService>();
+                    // *** إضافة خدمات المرحلة الرابعة ***
+                    services.AddScoped<IReportService, ReportService>();
+                    services.AddScoped<IPrintService, PrintService>();
 
+
+                    // تسجيل ViewModels
                     services.AddTransient<LoginViewModel>();
                     services.AddTransient<MainViewModel>();
                     services.AddTransient<DashboardViewModel>();
                     services.AddTransient<AddPatientViewModel>();
-                    services.AddTransient<EnterResultsViewModel>(); // ViewModel مسجل وهو المطلوب
+                    services.AddTransient<EnterResultsViewModel>();
+                    // *** إضافة ViewModels المرحلة الرابعة ***
+                    services.AddTransient<SelectReportViewModel>();
+                    services.AddTransient<ReportPreviewViewModel>();
 
+
+                    // تسجيل النوافذ (Windows) و (UserControls)
                     services.AddTransient<LoginWindow>();
                     services.AddTransient<MainWindow>();
-                    // services.AddTransient<AddPatientWindow>(); // معلق لأنه UserControl الآن
-                    // *** تم تعليق السطر التالي لأنه سيصبح UserControl ***
-                    // services.AddTransient<EnterResultsWindow>(); 
-
                     services.AddTransient<DashboardUserControl>();
                     services.AddTransient<AddPatientUserControl>();
-                    services.AddTransient<EnterResultsUserControl>(); // *** إضافة تسجيل UserControl الجديد ***
+                    services.AddTransient<EnterResultsUserControl>();
+                    // *** إضافة Views المرحلة الرابعة ***
+                    services.AddTransient<SelectReportUserControl>();
+                    services.AddTransient<ReportPreviewWindow>();
 
 
+                    // تسجيل اللوجر (Logger)
                     services.AddLogging(configure =>
                     {
                         configure.AddConsole();

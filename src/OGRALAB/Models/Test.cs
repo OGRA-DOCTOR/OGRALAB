@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
+using System.Linq;
 
 namespace OGRALAB.Models
 {
@@ -131,5 +132,30 @@ namespace OGRALAB.Models
         /// قائمة نتائج الفحوصات
         /// </summary>
         public virtual ICollection<TestResult> TestResults { get; set; } = new List<TestResult>();
+
+        /// <summary>
+        /// المعدل المرجعي
+        /// </summary>
+        public string ReferenceRange
+        {
+            get
+            {
+                var ranges = new List<string>();
+                if (!string.IsNullOrWhiteSpace(NormalRangeMale))
+                {
+                    ranges.Add($"ذكور: {NormalRangeMale}");
+                }
+                if (!string.IsNullOrWhiteSpace(NormalRangeFemale))
+                {
+                    ranges.Add($"إناث: {NormalRangeFemale}");
+                }
+                if (!string.IsNullOrWhiteSpace(NormalRangeChildren))
+                {
+                    ranges.Add($"أطفال: {NormalRangeChildren}");
+                }
+                var combinedRange = string.Join(" | ", ranges);
+                return string.IsNullOrEmpty(combinedRange) ? "غير محدد" : combinedRange;
+            }
+        }
     }
 }

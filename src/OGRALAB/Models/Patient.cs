@@ -117,6 +117,11 @@ namespace OGRALAB.Models
         public DateTime CreatedDate { get; set; } = DateTime.Now;
 
         /// <summary>
+        /// تاريخ التسجيل
+        /// </summary>
+        public DateTime RegistrationDate { get; set; } = DateTime.Now;
+
+        /// <summary>
         /// تاريخ آخر تحديث
         /// </summary>
         public DateTime? LastModifiedDate { get; set; }
@@ -125,5 +130,10 @@ namespace OGRALAB.Models
         /// قائمة طلبات الفحوصات للمريض
         /// </summary>
         public virtual ICollection<TestRequest> TestRequests { get; set; } = new List<TestRequest>();
+
+        /// <summary>
+        /// قائمة نتائج الفحوصات للمريض
+        /// </summary>
+        public virtual ICollection<TestResult> TestResults { get; set; } = new List<TestResult>();
     }
 }

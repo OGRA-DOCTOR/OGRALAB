@@ -9,6 +9,11 @@ namespace OGRALAB.Services
     public interface INavigationService
     {
         /// <summary>
+        /// الحصول على المحتوى الحالي
+        /// </summary>
+        UserControl? CurrentContent { get; }
+
+        /// <summary>
         /// حدث يتم إطلاقه عند تغيير المحتوى
         /// </summary>
         event EventHandler<UserControl>? ContentChanged;
@@ -20,20 +25,20 @@ namespace OGRALAB.Services
         void NavigateTo(UserControl content);
 
         /// <summary>
-        /// الحصول على المحتوى الحالي
-        /// </summary>
-        UserControl? CurrentContent { get; }
-
-        /// <summary>
         /// التنقل إلى لوحة المعلومات
         /// </summary>
         void NavigateToDashboard();
 
         /// <summary>
-        /// *** دالة جديدة: التنقل إلى واجهة محددة باسمها الرمزي ***
+        /// التنقل إلى واجهة محددة باسمها الرمزي
         /// </summary>
         /// <param name="viewName">الاسم الرمزي للواجهة (مثل "AddPatient", "EnterResults")</param>
-        void NavigateToView(string viewName); // ***** السطر الجديد المضاف *****
+        void NavigateToView(string viewName);
+
+        /// <summary>
+        /// *** إضافة للمرحلة الرابعة: التنقل إلى واجهة التقارير ***
+        /// </summary>
+        void NavigateToReports();
 
         /// <summary>
         /// تسجيل الخروج من التطبيق

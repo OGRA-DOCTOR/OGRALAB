@@ -99,5 +99,10 @@ namespace OGRALAB.Models
         /// هل تم الانتهاء من إدخال النتيجة
         /// </summary>
         public bool IsCompleted { get; set; }
+
+        /// <summary>
+        /// النتيجة
+        /// </summary>
+        public string Result => TextResult;
     }
 }

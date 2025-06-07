@@ -28,16 +28,9 @@ namespace OGRALAB.Services
                 if (_currentContent != value)
                 {
                     _currentContent = value;
-                    // *** تعديل هنا لمعالجة التحذير ***
                     if (_currentContent != null)
                     {
                         ContentChanged?.Invoke(this, _currentContent);
-                    }
-                    else
-                    {
-                        // يمكنك اختيار إطلاق الحدث مع null إذا كان هذا هو السلوك المطلوب
-                        // أو ببساطة عدم إطلاقه إذا كان المحتوى null
-                        // ContentChanged?.Invoke(this, null); // إذا أردت إعلام المشتركين بأن المحتوى أصبح null
                     }
                 }
             }
@@ -82,6 +75,14 @@ namespace OGRALAB.Services
                         viewToNavigate = enterResultsControl;
                         break;
 
+                    // *** إضافة للمرحلة الرابعة ***
+                    case "PreviewReports":
+                        var selectReportViewModel = _serviceProvider.GetRequiredService<SelectReportViewModel>();
+                        var selectReportControl = _serviceProvider.GetRequiredService<SelectReportUserControl>();
+                        selectReportControl.DataContext = selectReportViewModel;
+                        viewToNavigate = selectReportControl;
+                        break;
+
                     default:
                         MessageBox.Show($"View '{viewName}' not found.", "Navigation Error", MessageBoxButton.OK, MessageBoxImage.Error);
                         break;
@@ -94,9 +95,15 @@ namespace OGRALAB.Services
             }
             catch (Exception ex)
             {
-                ErrorLogger.Log(ex, $"NavigationService.NavigateToView({viewName})");
+                // ErrorLogger.Log(ex, $"NavigationService.NavigateToView({viewName})");
                 MessageBox.Show($"Error navigating to view '{viewName}': {ex.Message}", "Navigation Error", MessageBoxButton.OK, MessageBoxImage.Error);
             }
+        }
+
+        // *** تنفيذ الدالة الجديدة ***
+        public void NavigateToReports()
+        {
+            NavigateToView("PreviewReports");
         }
 
         public void Logout()
@@ -114,7 +121,7 @@ namespace OGRALAB.Services
             }
             catch (Exception ex)
             {
-                ErrorLogger.Log(ex, "NavigationService.Logout");
+                // ErrorLogger.Log(ex, "NavigationService.Logout");
                 MessageBox.Show($"Error during logout: {ex.Message}", "Logout Error", MessageBoxButton.OK, MessageBoxImage.Error);
             }
         }

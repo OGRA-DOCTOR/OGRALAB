@@ -65,5 +65,10 @@ namespace OGRALAB.Models
         /// قائمة المرضى المرتبطين بالطبيب
         /// </summary>
         public virtual ICollection<Patient> Patients { get; set; } = new List<Patient>();
+
+        /// <summary>
+        /// اسم الطبيب
+        /// </summary>
+        public string Name => FullName;
     }
 }

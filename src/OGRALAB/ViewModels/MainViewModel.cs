@@ -5,7 +5,9 @@ using OGRALAB.Models;
 using OGRALAB.Services;
 using System;
 using System.Linq;
-// using OGRALAB.Views; // قد لا يكون هذا مطلوبًا هنا إذا كان NavigationService يعتني بإنشاء Views
+using System.Windows.Input; // *** إضافة لاستخدام ICommand ***
+using System.Windows.Media; // *** إضافة لاستخدام SolidColorBrush ***
+using System.Windows;     // *** إضافة لاستخدام Application.Current.Resources ***
 
 namespace OGRALAB.ViewModels
 {
@@ -16,7 +18,6 @@ namespace OGRALAB.ViewModels
         private string _welcomeMessage = string.Empty;
         private UserControl? _currentContent;
         private NavigationItem? _selectedMenuItem;
-        private bool _showDashboardStats;
 
         public MainViewModel(INavigationService navigationService)
         {
@@ -28,7 +29,7 @@ namespace OGRALAB.ViewModels
         {
             _currentUser = currentUser ?? throw new ArgumentNullException(nameof(currentUser));
             WelcomeMessage = $"مرحباً، {_currentUser.FullName}!";
-            InitializeCommands();
+            InitializeCommands(); // Commands should be initialized before MenuItems
             InitializeMenuItems();
             NavigateToDashboard();
         }
@@ -67,36 +68,33 @@ namespace OGRALAB.ViewModels
 
         public ObservableCollection<NavigationItem> MenuItems { get; private set; } = new ObservableCollection<NavigationItem>();
 
-        public bool ShowDashboardStats
-        {
-            get => _showDashboardStats;
-            set => SetProperty(ref _showDashboardStats, value);
-        }
+        // *** الخصائص الجديدة للألوان من مقترح الوكيل (تتطلب تعريف الألوان في XAML) ***
+        public SolidColorBrush DashboardColor => (SolidColorBrush)Application.Current.Resources["DashboardColor"];
+        public SolidColorBrush AddPatientsColor => (SolidColorBrush)Application.Current.Resources["AddPatientsColor"];
+        public SolidColorBrush EnterResultsColor => (SolidColorBrush)Application.Current.Resources["EnterResultsColor"];
+        public SolidColorBrush PreviewReportsColor => (SolidColorBrush)Application.Current.Resources["PreviewReportsColor"];
+        public SolidColorBrush SettingsColor => (SolidColorBrush)Application.Current.Resources["SettingsColor"];
+        public SolidColorBrush LogoutColor => (SolidColorBrush)Application.Current.Resources["LogoutColor"];
         #endregion
 
         #region الأوامر
-        public RelayCommand DashboardCommand { get; private set; } = null!;
-        public RelayCommand AddPatientsCommand { get; private set; } = null!;
-        public RelayCommand EnterResultsCommand { get; private set; } = null!;
-        public RelayCommand PreviewReportsCommand { get; private set; } = null!;
-        public RelayCommand SearchModifyCommand { get; private set; } = null!;
-        public RelayCommand SettingsCommand { get; private set; } = null!;
-        public RelayCommand LogoutCommand { get; private set; } = null!;
+        public ICommand DashboardCommand { get; private set; } = null!;
+        public ICommand AddPatientsCommand { get; private set; } = null!;
+        public ICommand EnterResultsCommand { get; private set; } = null!;
+        public ICommand PreviewReportsCommand { get; private set; } = null!;
+        public ICommand LogoutCommand { get; private set; } = null!;
+        public ICommand SettingsCommand { get; private set; } = null!; // أمر الإعدادات
         #endregion
 
         #region طرق التهيئة
         private void InitializeCommands()
         {
-            DashboardCommand = new RelayCommand(NavigateToDashboard, () => _currentUser != null);
-            // *** تعديل: تفعيل الأوامر ***
-            AddPatientsCommand = new RelayCommand(NavigateToAddPatients, () => _currentUser != null);
-            EnterResultsCommand = new RelayCommand(NavigateToEnterResults, () => _currentUser != null);
-
-            // الأوامر الأخرى يمكن تفعيلها بنفس الطريقة عند الحاجة
-            PreviewReportsCommand = new RelayCommand(NavigateToPreviewReports, () => false);
-            SearchModifyCommand = new RelayCommand(NavigateToSearchModify, () => false);
-            SettingsCommand = new RelayCommand(NavigateToSettings, () => false);
-            LogoutCommand = new RelayCommand(Logout, () => _currentUser != null);
+            DashboardCommand = new RelayCommand(NavigateToDashboard);
+            AddPatientsCommand = new RelayCommand(NavigateToAddPatients);
+            EnterResultsCommand = new RelayCommand(NavigateToEnterResults);
+            PreviewReportsCommand = new RelayCommand(NavigateToPreviewReports); // تفعيل أمر التقارير
+            LogoutCommand = new RelayCommand(Logout);
+            SettingsCommand = new RelayCommand(NavigateToSettings, () => false); // تعطيل مؤقت
         }
 
         private void InitializeMenuItems()
@@ -104,78 +102,41 @@ namespace OGRALAB.ViewModels
             MenuItems.Clear();
             if (_currentUser == null) return;
 
-            MenuItems.Add(new NavigationItem { Icon = "📊", Title = "لوحة المعلومات", Command = DashboardCommand, IsEnabled = true, IsSelected = true });
-            // *** تعديل: تفعيل العناصر في القائمة ***
-            MenuItems.Add(new NavigationItem { Icon = "👥", Title = "إدخال المرضى", Command = AddPatientsCommand, IsEnabled = true });
-            MenuItems.Add(new NavigationItem { Icon = "📝", Title = "إدخال النتائج", Command = EnterResultsCommand, IsEnabled = true });
+            // استخدام التصميم الجديد المقترح من الوكيل
+            MenuItems.Add(new NavigationItem { Name = "لوحة المعلومات", Icon = "\uE80F", Color = DashboardColor, Command = DashboardCommand, IsEnabled = true, IsSelected = true });
+            MenuItems.Add(new NavigationItem { Name = "إدخال المرضى", Icon = "\uE716", Color = AddPatientsColor, Command = AddPatientsCommand, IsEnabled = true });
+            MenuItems.Add(new NavigationItem { Name = "إدخال النتائج", Icon = "\uE9F9", Color = EnterResultsColor, Command = EnterResultsCommand, IsEnabled = true });
 
-            MenuItems.Add(new NavigationItem { Icon = "📄", Title = "معاينة وطباعة التقارير", Command = PreviewReportsCommand, IsEnabled = false });
-            MenuItems.Add(new NavigationItem { Icon = "🔍", Title = "البحث والتعديل", Command = SearchModifyCommand, IsEnabled = false });
-            MenuItems.Add(new NavigationItem { Icon = "⚙️", Title = "الإعدادات", Command = SettingsCommand, IsEnabled = false });
-            MenuItems.Add(new NavigationItem { Icon = "🚪", Title = "تسجيل الخروج", Command = LogoutCommand, IsEnabled = true });
+            // *** تم التعديل هنا ***
+            // تم تغيير اسم العنصر من "معاينة التقارير" إلى "معاينة وطباعة التقارير"
+            MenuItems.Add(new NavigationItem { Name = "معاينة وطباعة التقارير", Icon = "\uE8A5", Color = PreviewReportsColor, Command = PreviewReportsCommand, IsEnabled = true });
+
+            MenuItems.Add(new NavigationItem { Name = "الإعدادات", Icon = "\uE713", Color = SettingsColor, Command = SettingsCommand, IsEnabled = false }); // تعطيل مؤقت
+            MenuItems.Add(new NavigationItem { Name = "تسجيل الخروج", Icon = "\uE7E8", Color = LogoutColor, Command = LogoutCommand, IsEnabled = true });
 
             SelectedMenuItem = MenuItems.FirstOrDefault(m => m.IsSelected);
         }
         #endregion
 
         #region طرق التنقل
-        private void NavigateToDashboard()
-        {
-            if (_currentUser != null)
-            {
-                _navigationService.NavigateToDashboard(); // هذه ستعرض DashboardUserControl
-                ShowDashboardStats = true;
-            }
-        }
-        private void NavigateToAddPatients()
-        {
-            if (_currentUser != null)
-            {
-                // سنحتاج إلى طريقة في NavigationService للتعامل مع هذا
-                // _navigationService.NavigateTo(typeof(AddPatientUserControl)); // أو اسم مشابه للدالة
-                _navigationService.NavigateToView("AddPatient"); // اسم رمزي للواجهة، سنعرفه في NavigationService
-                ShowDashboardStats = false;
-            }
-        }
-        private void NavigateToEnterResults()
-        {
-            if (_currentUser != null)
-            {
-                // _navigationService.NavigateTo(typeof(EnterResultsView)); // أو اسم مشابه للدالة
-                _navigationService.NavigateToView("EnterResults"); // اسم رمزي للواجهة
-                ShowDashboardStats = false;
-            }
-        }
-        private void NavigateToPreviewReports()
-        {
-            ShowDashboardStats = false;
-        }
-        private void NavigateToSearchModify()
-        {
-            ShowDashboardStats = false;
-        }
-        private void NavigateToSettings()
-        {
-            ShowDashboardStats = false;
-        }
-        private void Logout()
-        {
-            if (_currentUser != null)
-            {
-                _navigationService.Logout();
-                ShowDashboardStats = false;
-            }
-        }
+        private void NavigateToDashboard() => _navigationService.NavigateToDashboard();
+        private void NavigateToAddPatients() => _navigationService.NavigateToView("AddPatient");
+        private void NavigateToEnterResults() => _navigationService.NavigateToView("EnterResults");
+        private void NavigateToPreviewReports() => _navigationService.NavigateToReports(); // استدعاء الدالة الجديدة
+        private void NavigateToSettings() { /* لا يتم عمل شيء حاليًا */ }
+        private void Logout() => _navigationService.Logout();
         #endregion
     }
 
-    public class NavigationItem : BaseViewModel // NavigationItem class remains the same
+    // تعديل بسيط على NavigationItem ليطابق مقترح الوكيل
+    public class NavigationItem : BaseViewModel
     {
         private bool _isSelected;
+        public string Name { get; set; } = string.Empty;
         public string Icon { get; set; } = string.Empty;
-        public string Title { get; set; } = string.Empty;
-        public RelayCommand? Command { get; set; }
-        public bool IsEnabled { get; set; } = true; // Default to true
+        public SolidColorBrush Color { get; set; } = Brushes.Black;
+        public ICommand? Command { get; set; }
+        public bool IsEnabled { get; set; } = true;
         public bool IsSelected
         {
             get => _isSelected;
