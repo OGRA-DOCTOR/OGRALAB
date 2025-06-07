@@ -49,7 +49,6 @@ namespace OGRALAB
                 // Current.Resources["ServiceProvider"] = AppHost.Services;
 
                 await InitializeDatabaseAsync(AppHost.Services);
-
                 var loginWindow = AppHost.Services.GetRequiredService<LoginWindow>();
                 Current.MainWindow = loginWindow;
                 loginWindow.Show();
@@ -96,7 +95,6 @@ namespace OGRALAB
                 .ConfigureServices((context, services) =>
                 {
                     services.AddSingleton(configuration);
-
                     services.AddDbContext<OgralabDbContext>(options =>
                         options.UseSqlite(configuration.GetConnectionString("DefaultConnection")), ServiceLifetime.Scoped);
 
@@ -116,11 +114,10 @@ namespace OGRALAB
                     services.AddTransient<DashboardViewModel>();
                     services.AddTransient<AddPatientViewModel>();
                     services.AddTransient<EnterResultsViewModel>();
-
-                    // --- تم تعليق تسجيل ViewModels الجديدة مؤقتًا ---
-                    // services.AddTransient<SettingsViewModel>();
-                    // services.AddTransient<UserManagementViewModel>();
-                    // services.AddTransient<TestManagementViewModel>();
+                    // *** تم إلغاء تعليق ViewModels الجديدة - المرحلة الثالثة ***
+                    services.AddTransient<SettingsViewModel>();
+                    services.AddTransient<UserManagementViewModel>();
+                    services.AddTransient<TestManagementViewModel>();
 
                     // --- تسجيل Views ---
                     services.AddTransient<LoginWindow>();
@@ -128,11 +125,15 @@ namespace OGRALAB
                     services.AddTransient<DashboardUserControl>();
                     services.AddTransient<AddPatientUserControl>();
                     services.AddTransient<EnterResultsUserControl>();
+                    // *** تم إلغاء تعليق Views الجديدة - المرحلة الثالثة ***
+                    services.AddTransient<SettingsUserControl>();
+                    services.AddTransient<UserManagementWindow>();
+                    services.AddTransient<TestManagementWindow>();
 
-                    // --- تم تعليق تسجيل Views الجديدة مؤقتًا ---
-                    // services.AddTransient<SettingsUserControl>();
-                    // services.AddTransient<UserManagementWindow>();
-                    // services.AddTransient<TestManagementWindow>();
+                    // *** إضافة واجهات المستخدم المضمنة الجديدة ***
+                    services.AddTransient<MainMenuUserControl>();
+                    services.AddTransient<UserManagementUserControl>();
+                    services.AddTransient<TestManagementUserControl>();
 
                     services.AddLogging(configure =>
                     {

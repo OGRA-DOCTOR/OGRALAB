@@ -7,7 +7,7 @@ namespace OGRALAB.Services
 {
     public interface IAuthenticationService
     {
-        // --- الخاصية الجديدة التي تحتاجها الـ ViewModels ---
+        // --- تمت إضافة هذه الخاصية ---
         User? CurrentUser { get; }
 
         Task<User?> AuthenticateAsync(string username, string password);
@@ -18,7 +18,7 @@ namespace OGRALAB.Services
         Task<UserSettings?> GetUserSettingsAsync(string username);
         string HashPassword(string password);
 
-        // --- الدالة الجديدة التي تحتاجها الـ ViewModels ---
+        // --- تمت إضافة هذه الدالة ---
         void Logout();
     }
 }

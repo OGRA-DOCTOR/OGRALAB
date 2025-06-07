@@ -1,0 +1,201 @@
+﻿<UserControl x:Class="OGRALAB.Views.MainMenuUserControl"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             Background="#F8F9FA">
+
+    <UserControl.Resources>
+        <!-- Styles -->
+        <Style x:Key="HeaderTextStyle" TargetType="TextBlock">
+            <Setter Property="FontSize" Value="28"/>
+            <Setter Property="FontWeight" Value="Bold"/>
+            <Setter Property="Foreground" Value="#2C3E50"/>
+            <Setter Property="Margin" Value="0,20,0,30"/>
+            <Setter Property="HorizontalAlignment" Value="Center"/>
+        </Style>
+
+        <Style x:Key="SubHeaderTextStyle" TargetType="TextBlock">
+            <Setter Property="FontSize" Value="16"/>
+            <Setter Property="Foreground" Value="#7F8C8D"/>
+            <Setter Property="Margin" Value="0,0,0,40"/>
+            <Setter Property="HorizontalAlignment" Value="Center"/>
+            <Setter Property="TextWrapping" Value="Wrap"/>
+        </Style>
+
+        <Style x:Key="MenuButtonStyle" TargetType="Button">
+            <Setter Property="Background" Value="White"/>
+            <Setter Property="BorderBrush" Value="#BDC3C7"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="Padding" Value="25,20"/>
+            <Setter Property="Margin" Value="15"/>
+            <Setter Property="FontSize" Value="16"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="MinWidth" Value="300"/>
+            <Setter Property="MinHeight" Value="80"/>
+            <Setter Property="Effect">
+                <Setter.Value>
+                    <DropShadowEffect BlurRadius="5" ShadowDepth="2" Color="#7F000000" Opacity="0.2"/>
+                </Setter.Value>
+            </Setter>
+            <Style.Triggers>
+                <Trigger Property="IsMouseOver" Value="True">
+                    <Setter Property="Background" Value="#ECF0F1"/>
+                    <Setter Property="BorderBrush" Value="#3498DB"/>
+                    <Setter Property="Effect">
+                        <Setter.Value>
+                            <DropShadowEffect BlurRadius="8" ShadowDepth="3" Color="#7F000000" Opacity="0.3"/>
+                        </Setter.Value>
+                    </Setter>
+                </Trigger>
+                <Trigger Property="IsEnabled" Value="False">
+                    <Setter Property="Background" Value="#F8F9FA"/>
+                    <Setter Property="Foreground" Value="#95A5A6"/>
+                    <Setter Property="Cursor" Value="Arrow"/>
+                </Trigger>
+            </Style.Triggers>
+        </Style>
+
+        <Style x:Key="ComingSoonButtonStyle" TargetType="Button" BasedOn="{StaticResource MenuButtonStyle}">
+            <Setter Property="Background" Value="#FEF9E7"/>
+            <Setter Property="BorderBrush" Value="#F4D03F"/>
+            <Setter Property="Foreground" Value="#B7950B"/>
+            <Setter Property="IsEnabled" Value="False"/>
+        </Style>
+
+        <Style x:Key="MenuIconStyle" TargetType="TextBlock">
+            <Setter Property="FontSize" Value="24"/>
+            <Setter Property="Margin" Value="0,0,10,0"/>
+            <Setter Property="VerticalAlignment" Value="Center"/>
+        </Style>
+
+        <Style x:Key="MenuTextStyle" TargetType="TextBlock">
+            <Setter Property="FontSize" Value="14"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="VerticalAlignment" Value="Center"/>
+            <Setter Property="TextWrapping" Value="Wrap"/>
+        </Style>
+
+        <Style x:Key="MenuDescriptionStyle" TargetType="TextBlock">
+            <Setter Property="FontSize" Value="11"/>
+            <Setter Property="Foreground" Value="#7F8C8D"/>
+            <Setter Property="Margin" Value="0,5,0,0"/>
+            <Setter Property="TextWrapping" Value="Wrap"/>
+        </Style>
+    </UserControl.Resources>
+
+    <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+        <StackPanel Margin="40">
+
+            <!-- Header -->
+            <TextBlock Text="نظام إدارة المختبرات الطبية" Style="{StaticResource HeaderTextStyle}"/>
+            <TextBlock Text="OGRALAB - Medical Laboratory Management System" Style="{StaticResource SubHeaderTextStyle}"/>
+
+            <!-- Main Menu Grid -->
+            <Grid MaxWidth="800">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="*"/>
+                </Grid.ColumnDefinitions>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                </Grid.RowDefinitions>
+
+                <!-- Patient Management (Coming Soon) -->
+                <Button Grid.Row="0" Grid.Column="0" Style="{StaticResource ComingSoonButtonStyle}">
+                    <StackPanel>
+                        <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
+                            <TextBlock Text="👥" Style="{StaticResource MenuIconStyle}"/>
+                            <TextBlock Text="إدارة المرضى" Style="{StaticResource MenuTextStyle}"/>
+                        </StackPanel>
+                        <TextBlock Text="إضافة وإدارة بيانات المرضى" Style="{StaticResource MenuDescriptionStyle}"/>
+                        <TextBlock Text="(قريباً - Coming Soon)" Foreground="#E67E22" FontWeight="Bold" Margin="0,5,0,0"/>
+                    </StackPanel>
+                </Button>
+
+                <!-- Test Results (Coming Soon) -->
+                <Button Grid.Row="0" Grid.Column="1" Style="{StaticResource ComingSoonButtonStyle}">
+                    <StackPanel>
+                        <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
+                            <TextBlock Text="🧪" Style="{StaticResource MenuIconStyle}"/>
+                            <TextBlock Text="نتائج التحاليل" Style="{StaticResource MenuTextStyle}"/>
+                        </StackPanel>
+                        <TextBlock Text="إدخال وإدارة نتائج التحاليل" Style="{StaticResource MenuDescriptionStyle}"/>
+                        <TextBlock Text="(قريباً - Coming Soon)" Foreground="#E67E22" FontWeight="Bold" Margin="0,5,0,0"/>
+                    </StackPanel>
+                </Button>
+
+                <!-- Reports (Coming Soon) -->
+                <Button Grid.Row="1" Grid.Column="0" Style="{StaticResource ComingSoonButtonStyle}">
+                    <StackPanel>
+                        <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
+                            <TextBlock Text="📊" Style="{StaticResource MenuIconStyle}"/>
+                            <TextBlock Text="التقارير" Style="{StaticResource MenuTextStyle}"/>
+                        </StackPanel>
+                        <TextBlock Text="تقارير شاملة ومفصلة" Style="{StaticResource MenuDescriptionStyle}"/>
+                        <TextBlock Text="(قريباً - Coming Soon)" Foreground="#E67E22" FontWeight="Bold" Margin="0,5,0,0"/>
+                    </StackPanel>
+                </Button>
+
+                <!-- Financial Management (Coming Soon) -->
+                <Button Grid.Row="1" Grid.Column="1" Style="{StaticResource ComingSoonButtonStyle}">
+                    <StackPanel>
+                        <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
+                            <TextBlock Text="💰" Style="{StaticResource MenuIconStyle}"/>
+                            <TextBlock Text="الإدارة المالية" Style="{StaticResource MenuTextStyle}"/>
+                        </StackPanel>
+                        <TextBlock Text="إدارة الفواتير والمدفوعات" Style="{StaticResource MenuDescriptionStyle}"/>
+                        <TextBlock Text="(قريباً - Coming Soon)" Foreground="#E67E22" FontWeight="Bold" Margin="0,5,0,0"/>
+                    </StackPanel>
+                </Button>
+
+                <!-- Inventory (Coming Soon) -->
+                <Button Grid.Row="2" Grid.Column="0" Style="{StaticResource ComingSoonButtonStyle}">
+                    <StackPanel>
+                        <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
+                            <TextBlock Text="📦" Style="{StaticResource MenuIconStyle}"/>
+                            <TextBlock Text="إدارة المخزون" Style="{StaticResource MenuTextStyle}"/>
+                        </StackPanel>
+                        <TextBlock Text="متابعة المواد والمعدات" Style="{StaticResource MenuDescriptionStyle}"/>
+                        <TextBlock Text="(قريباً - Coming Soon)" Foreground="#E67E22" FontWeight="Bold" Margin="0,5,0,0"/>
+                    </StackPanel>
+                </Button>
+
+                <!-- Quality Control (Coming Soon) -->
+                <Button Grid.Row="2" Grid.Column="1" Style="{StaticResource ComingSoonButtonStyle}">
+                    <StackPanel>
+                        <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
+                            <TextBlock Text="🎯" Style="{StaticResource MenuIconStyle}"/>
+                            <TextBlock Text="ضمان الجودة" Style="{StaticResource MenuTextStyle}"/>
+                        </StackPanel>
+                        <TextBlock Text="مراقبة جودة العمليات" Style="{StaticResource MenuDescriptionStyle}"/>
+                        <TextBlock Text="(قريباً - Coming Soon)" Foreground="#E67E22" FontWeight="Bold" Margin="0,5,0,0"/>
+                    </StackPanel>
+                </Button>
+
+            </Grid>
+
+            <!-- Current Phase Information -->
+            <Border Background="White" BorderBrush="#3498DB" BorderThickness="2" 
+                   CornerRadius="5" Padding="20" Margin="20,40,20,20">
+                <StackPanel>
+                    <TextBlock Text="🚀 المرحلة الحالية - Current Phase" 
+                              FontSize="18" FontWeight="Bold" Foreground="#3498DB" 
+                              HorizontalAlignment="Center" Margin="0,0,0,15"/>
+
+                    <TextBlock TextWrapping="Wrap" FontSize="14" Foreground="#2C3E50" TextAlignment="Center">
+                        <Run Text="تم تطوير البنية الأساسية للنظام وإعداد إدارة المستخدمين والتحاليل."/>
+                        <LineBreak/>
+                        <Run Text="استخدم قسم الإعدادات لإعداد النظام وإضافة التحاليل المطلوبة."/>
+                        <LineBreak/>
+                        <LineBreak/>
+                        <Run Text="المراحل القادمة ستشمل إدارة المرضى، النتائج، والتقارير."/>
+                    </TextBlock>
+                </StackPanel>
+            </Border>
+
+        </StackPanel>
+    </ScrollViewer>
+</UserControl>

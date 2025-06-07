@@ -12,7 +12,6 @@ namespace OGRALAB.Services
     {
         private UserControl? _currentContent;
         private readonly IServiceProvider _serviceProvider;
-
         public event EventHandler<UserControl>? ContentChanged;
 
         public NavigationService(IServiceProvider serviceProvider)
@@ -51,7 +50,6 @@ namespace OGRALAB.Services
             try
             {
                 UserControl? viewToNavigate = null;
-
                 switch (viewName)
                 {
                     case "Dashboard":
@@ -60,36 +58,48 @@ namespace OGRALAB.Services
                         dashboardControl.DataContext = dashboardViewModel;
                         viewToNavigate = dashboardControl;
                         break;
-
                     case "AddPatient":
                         var addPatientViewModel = _serviceProvider.GetRequiredService<AddPatientViewModel>();
                         var addPatientControl = _serviceProvider.GetRequiredService<AddPatientUserControl>();
                         addPatientControl.DataContext = addPatientViewModel;
                         viewToNavigate = addPatientControl;
                         break;
-
                     case "EnterResults":
                         var enterResultsViewModel = _serviceProvider.GetRequiredService<EnterResultsViewModel>();
                         var enterResultsControl = _serviceProvider.GetRequiredService<EnterResultsUserControl>();
                         enterResultsControl.DataContext = enterResultsViewModel;
                         viewToNavigate = enterResultsControl;
                         break;
-
-                    // --- تم تعليق هذا الجزء مؤقتًا لأنه لم يتم إنشاؤه بعد ---
-                    /*
+                    // *** تم إلغاء تعليق واجهة الإعدادات ***
                     case "Settings":
                         var settingsViewModel = _serviceProvider.GetRequiredService<SettingsViewModel>();
                         var settingsControl = _serviceProvider.GetRequiredService<SettingsUserControl>();
                         settingsControl.DataContext = settingsViewModel;
                         viewToNavigate = settingsControl;
                         break;
-                    */
-
+                    // *** إضافة واجهة القائمة الرئيسية ***
+                    case "MainMenu":
+                        var mainMenuControl = _serviceProvider.GetRequiredService<MainMenuUserControl>();
+                        viewToNavigate = mainMenuControl;
+                        break;
+                    // *** إضافة واجهة إدارة المستخدمين المضمنة ***
+                    case "UserManagementEmbedded":
+                        var userMgmtViewModel = _serviceProvider.GetRequiredService<UserManagementViewModel>();
+                        var userMgmtControl = _serviceProvider.GetRequiredService<UserManagementUserControl>();
+                        userMgmtControl.DataContext = userMgmtViewModel;
+                        viewToNavigate = userMgmtControl;
+                        break;
+                    // *** إضافة واجهة إدارة التحاليل المضمنة ***
+                    case "TestManagementEmbedded":
+                        var testMgmtViewModel = _serviceProvider.GetRequiredService<TestManagementViewModel>();
+                        var testMgmtControl = _serviceProvider.GetRequiredService<TestManagementUserControl>();
+                        testMgmtControl.DataContext = testMgmtViewModel;
+                        viewToNavigate = testMgmtControl;
+                        break;
                     default:
                         MessageBox.Show($"View '{viewName}' not found.", "Navigation Error", MessageBoxButton.OK, MessageBoxImage.Error);
                         break;
                 }
-
                 if (viewToNavigate != null)
                 {
                     NavigateTo(viewToNavigate);
@@ -97,7 +107,6 @@ namespace OGRALAB.Services
             }
             catch (Exception ex)
             {
-                // افترض وجود ErrorLogger لديك
                 // ErrorLogger.Log(ex, $"NavigationService.NavigateToView({viewName})");
                 MessageBox.Show($"Error navigating to view '{viewName}': {ex.Message}", "Navigation Error", MessageBoxButton.OK, MessageBoxImage.Error);
             }
@@ -108,10 +117,8 @@ namespace OGRALAB.Services
             try
             {
                 var loginWindow = _serviceProvider.GetRequiredService<LoginWindow>();
-
                 var mainWindow = Application.Current.Windows.OfType<MainWindow>().FirstOrDefault();
                 mainWindow?.Close();
-
                 Application.Current.MainWindow = loginWindow;
                 loginWindow.Show();
                 CurrentContent = null;

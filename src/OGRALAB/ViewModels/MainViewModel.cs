@@ -5,7 +5,6 @@ using OGRALAB.Models;
 using OGRALAB.Services;
 using System;
 using System.Linq;
-// using OGRALAB.Views; // قد لا يكون هذا مطلوبًا هنا إذا كان NavigationService يعتني بإنشاء Views
 
 namespace OGRALAB.ViewModels
 {
@@ -44,15 +43,12 @@ namespace OGRALAB.ViewModels
             get => _welcomeMessage;
             set => SetProperty(ref _welcomeMessage, value);
         }
-
         public User? CurrentUser => _currentUser;
-
         public UserControl? CurrentContent
         {
             get => _currentContent;
             set => SetProperty(ref _currentContent, value);
         }
-
         public NavigationItem? SelectedMenuItem
         {
             get => _selectedMenuItem;
@@ -60,42 +56,46 @@ namespace OGRALAB.ViewModels
             {
                 if (SetProperty(ref _selectedMenuItem, value) && value != null && value.IsEnabled)
                 {
+                    // هذا الجزء من الكود الأصلي أفضل لأنه ينفذ الأمر عند التحديد
                     value.Command?.Execute(null);
+
+                    // هذا الجزء من كود الوكيل لضمان التحديد البصري فقط
+                    foreach (var item in MenuItems.Where(i => i != value))
+                    {
+                        item.IsSelected = false;
+                    }
+                    value.IsSelected = true;
                 }
             }
         }
-
-        public ObservableCollection<NavigationItem> MenuItems { get; private set; } = new ObservableCollection<NavigationItem>();
-
         public bool ShowDashboardStats
         {
             get => _showDashboardStats;
             set => SetProperty(ref _showDashboardStats, value);
         }
+        public ObservableCollection<NavigationItem> MenuItems { get; } = new ObservableCollection<NavigationItem>();
         #endregion
 
         #region الأوامر
-        public RelayCommand DashboardCommand { get; private set; } = null!;
-        public RelayCommand AddPatientsCommand { get; private set; } = null!;
-        public RelayCommand EnterResultsCommand { get; private set; } = null!;
-        public RelayCommand PreviewReportsCommand { get; private set; } = null!;
-        public RelayCommand SearchModifyCommand { get; private set; } = null!;
-        public RelayCommand SettingsCommand { get; private set; } = null!;
-        public RelayCommand LogoutCommand { get; private set; } = null!;
-        #endregion
+        public RelayCommand? DashboardCommand { get; private set; }
+        public RelayCommand? AddPatientsCommand { get; private set; }
+        public RelayCommand? EnterResultsCommand { get; private set; }
+        public RelayCommand? PreviewReportsCommand { get; private set; }
+        public RelayCommand? SearchModifyCommand { get; private set; }
+        public RelayCommand? SettingsCommand { get; private set; }
+        public RelayCommand? LogoutCommand { get; private set; }
 
-        #region طرق التهيئة
         private void InitializeCommands()
         {
             DashboardCommand = new RelayCommand(NavigateToDashboard, () => _currentUser != null);
-            // *** تعديل: تفعيل الأوامر ***
             AddPatientsCommand = new RelayCommand(NavigateToAddPatients, () => _currentUser != null);
             EnterResultsCommand = new RelayCommand(NavigateToEnterResults, () => _currentUser != null);
+            PreviewReportsCommand = new RelayCommand(NavigateToPreviewReports, () => false); // معطل حاليًا
+            SearchModifyCommand = new RelayCommand(NavigateToSearchModify, () => false); // معطل حاليًا
 
-            // الأوامر الأخرى يمكن تفعيلها بنفس الطريقة عند الحاجة
-            PreviewReportsCommand = new RelayCommand(NavigateToPreviewReports, () => false);
-            SearchModifyCommand = new RelayCommand(NavigateToSearchModify, () => false);
-            SettingsCommand = new RelayCommand(NavigateToSettings, () => false);
+            // *** تم تفعيل أمر الإعدادات ***
+            SettingsCommand = new RelayCommand(NavigateToSettings, () => _currentUser != null);
+
             LogoutCommand = new RelayCommand(Logout, () => _currentUser != null);
         }
 
@@ -105,13 +105,14 @@ namespace OGRALAB.ViewModels
             if (_currentUser == null) return;
 
             MenuItems.Add(new NavigationItem { Icon = "📊", Title = "لوحة المعلومات", Command = DashboardCommand, IsEnabled = true, IsSelected = true });
-            // *** تعديل: تفعيل العناصر في القائمة ***
             MenuItems.Add(new NavigationItem { Icon = "👥", Title = "إدخال المرضى", Command = AddPatientsCommand, IsEnabled = true });
             MenuItems.Add(new NavigationItem { Icon = "📝", Title = "إدخال النتائج", Command = EnterResultsCommand, IsEnabled = true });
-
             MenuItems.Add(new NavigationItem { Icon = "📄", Title = "معاينة وطباعة التقارير", Command = PreviewReportsCommand, IsEnabled = false });
             MenuItems.Add(new NavigationItem { Icon = "🔍", Title = "البحث والتعديل", Command = SearchModifyCommand, IsEnabled = false });
-            MenuItems.Add(new NavigationItem { Icon = "⚙️", Title = "الإعدادات", Command = SettingsCommand, IsEnabled = false });
+
+            // *** تم تفعيل عنصر الإعدادات ***
+            MenuItems.Add(new NavigationItem { Icon = "⚙️", Title = "الإعدادات", Command = SettingsCommand, IsEnabled = true });
+
             MenuItems.Add(new NavigationItem { Icon = "🚪", Title = "تسجيل الخروج", Command = LogoutCommand, IsEnabled = true });
 
             SelectedMenuItem = MenuItems.FirstOrDefault(m => m.IsSelected);
@@ -123,7 +124,7 @@ namespace OGRALAB.ViewModels
         {
             if (_currentUser != null)
             {
-                _navigationService.NavigateToDashboard(); // هذه ستعرض DashboardUserControl
+                _navigationService.NavigateToDashboard();
                 ShowDashboardStats = true;
             }
         }
@@ -131,9 +132,7 @@ namespace OGRALAB.ViewModels
         {
             if (_currentUser != null)
             {
-                // سنحتاج إلى طريقة في NavigationService للتعامل مع هذا
-                // _navigationService.NavigateTo(typeof(AddPatientUserControl)); // أو اسم مشابه للدالة
-                _navigationService.NavigateToView("AddPatient"); // اسم رمزي للواجهة، سنعرفه في NavigationService
+                _navigationService.NavigateToView("AddPatient");
                 ShowDashboardStats = false;
             }
         }
@@ -141,8 +140,7 @@ namespace OGRALAB.ViewModels
         {
             if (_currentUser != null)
             {
-                // _navigationService.NavigateTo(typeof(EnterResultsView)); // أو اسم مشابه للدالة
-                _navigationService.NavigateToView("EnterResults"); // اسم رمزي للواجهة
+                _navigationService.NavigateToView("EnterResults");
                 ShowDashboardStats = false;
             }
         }
@@ -154,10 +152,17 @@ namespace OGRALAB.ViewModels
         {
             ShowDashboardStats = false;
         }
+
+        // *** تم تطوير طريقة التنقل للإعدادات ***
         private void NavigateToSettings()
         {
-            ShowDashboardStats = false;
+            if (_currentUser != null)
+            {
+                _navigationService.NavigateToView("Settings");
+                ShowDashboardStats = false;
+            }
         }
+
         private void Logout()
         {
             if (_currentUser != null)
@@ -169,13 +174,13 @@ namespace OGRALAB.ViewModels
         #endregion
     }
 
-    public class NavigationItem : BaseViewModel // NavigationItem class remains the same
+    public class NavigationItem : BaseViewModel
     {
         private bool _isSelected;
         public string Icon { get; set; } = string.Empty;
         public string Title { get; set; } = string.Empty;
         public RelayCommand? Command { get; set; }
-        public bool IsEnabled { get; set; } = true; // Default to true
+        public bool IsEnabled { get; set; } = true;
         public bool IsSelected
         {
             get => _isSelected;

@@ -12,6 +12,9 @@ namespace OGRALAB.Services
     {
         private readonly OgralabDbContext _context;
 
+        // --- تمت إضافة هذه الخاصية ---
+        public User? CurrentUser { get; private set; }
+
         public AuthenticationService(OgralabDbContext context)
         {
             _context = context;
@@ -29,7 +32,16 @@ namespace OGRALAB.Services
                 return null;
 
             bool isValidPassword = await ValidatePasswordAsync(password, user.PasswordHash);
-            return isValidPassword ? user : null;
+
+            if (isValidPassword)
+            {
+                // إذا نجحت المصادقة، قم بتعيين المستخدم الحالي
+                CurrentUser = user;
+                await UpdateLastLoginAsync(username);
+                return user;
+            }
+
+            return null;
         }
 
         public async Task<bool> ValidatePasswordAsync(string password, string hash)
@@ -94,6 +106,12 @@ namespace OGRALAB.Services
         public string HashPassword(string password)
         {
             return BCrypt.Net.BCrypt.HashPassword(password);
+        }
+
+        // --- تمت إضافة هذه الدالة ---
+        public void Logout()
+        {
+            CurrentUser = null;
         }
     }
 }

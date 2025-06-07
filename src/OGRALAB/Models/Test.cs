@@ -14,10 +14,10 @@ namespace OGRALAB.Models
         [StringLength(20)]
         public string TestCode { get; set; } = string.Empty;
 
-        // --- هذا هو التعديل الرئيسي ---
+        // --- تم تغيير الاسم من TestName ليتوافق مع الـ ViewModel ---
         [Required]
         [StringLength(200)]
-        public string Name { get; set; } = string.Empty; // تم تغيير الاسم من TestName
+        public string Name { get; set; } = string.Empty;
 
         [StringLength(50)]
         public string? Abbreviation { get; set; }
@@ -58,7 +58,6 @@ namespace OGRALAB.Models
 
         public DateTime CreatedDate { get; set; } = DateTime.Now;
 
-        // --- العلاقات ---
         public virtual ICollection<TestRequest> TestRequests { get; set; } = new List<TestRequest>();
         public virtual ICollection<TestResult> TestResults { get; set; } = new List<TestResult>();
         public virtual ICollection<TestReferenceRange> ReferenceRanges { get; set; } = new List<TestReferenceRange>();

@@ -56,7 +56,7 @@ namespace OGRALAB.Models
             }
         }
 
-        // --- هذه هي الخاصية الجديدة التي تمت إضافتها ---
+        // --- تمت إضافة هذه الخاصية لتتوافق مع الـ ViewModel ---
         [NotMapped]
         public string FullDescription
         {
