@@ -42,10 +42,10 @@ namespace OGRALAB.Services
                 existingResult.ResultDate = DateTime.Now;
                 existingResult.EnteredBy = enteredBy;
                 existingResult.IsCompleted = testResult.IsCompleted;
-                
+
                 // إعادة حساب العلامة والمعدل الطبيعي
                 await UpdateTestFlagAndNormalRangeAsync(existingResult);
-                
+
                 _context.TestResults.Update(existingResult);
                 testResult = existingResult;
             }
@@ -54,10 +54,10 @@ namespace OGRALAB.Services
                 // إضافة نتيجة جديدة
                 testResult.ResultDate = DateTime.Now;
                 testResult.EnteredBy = enteredBy;
-                
+
                 // حساب العلامة والمعدل الطبيعي
                 await UpdateTestFlagAndNormalRangeAsync(testResult);
-                
+
                 _context.TestResults.Add(testResult);
             }
 
@@ -75,7 +75,7 @@ namespace OGRALAB.Services
                 {
                     testRequest.Status = "In Progress";
                 }
-                
+
                 _context.TestRequests.Update(testRequest);
             }
 
@@ -95,11 +95,11 @@ namespace OGRALAB.Services
             var testRequest = await _context.TestRequests
                 .Include(tr => tr.Patient)
                 .FirstOrDefaultAsync(tr => tr.Id == testResult.TestRequestId);
-            
+
             if (testRequest?.Patient == null) return;
 
             var patient = testRequest.Patient;
-            
+
             // تحديد المعدل الطبيعي المناسب
             string normalRange = "";
             decimal? minNormal = test.MinNormalValue;
@@ -107,29 +107,29 @@ namespace OGRALAB.Services
 
             if (patient.AgeUnit == AgeUnit.Years && patient.Age < 18)
             {
-                normalRange = test.NormalRangeChildren;
+                normalRange = test.NormalRangeChildren ?? "";
             }
             else if (patient.Gender == Gender.Male)
             {
-                normalRange = test.NormalRangeMale;
+                normalRange = test.NormalRangeMale ?? "";
             }
             else if (patient.Gender == Gender.Female)
             {
-                normalRange = test.NormalRangeFemale;
+                normalRange = test.NormalRangeFemale ?? "";
             }
             else
             {
-                normalRange = test.NormalRangeMale; // افتراضي
+                normalRange = test.NormalRangeMale ?? "";
             }
 
             testResult.AppliedNormalRange = normalRange;
-            testResult.Unit = test.Unit;
+            testResult.Unit = test.Unit ?? "";
 
             // تحديد علامة الفحص إذا كانت النتيجة رقمية
             if (testResult.NumericResult.HasValue && minNormal.HasValue && maxNormal.HasValue)
             {
                 var value = testResult.NumericResult.Value;
-                
+
                 // فحص القيم الحرجة أولاً
                 if ((test.CriticalLowValue.HasValue && value <= test.CriticalLowValue.Value) ||
                     (test.CriticalHighValue.HasValue && value >= test.CriticalHighValue.Value))
@@ -167,9 +167,9 @@ namespace OGRALAB.Services
                 .Include(tr => tr.Test)
                 .Include(tr => tr.TestRequest)
                     .ThenInclude(req => req.Patient)
-                .Where(tr => tr.TestRequest.PatientId == patientId)
-                .OrderBy(tr => tr.Test.Category)
-                .ThenBy(tr => tr.Test.DisplayOrder)
+                .Where(tr => tr.TestRequest!.PatientId == patientId) // تم إضافة ! هنا
+                .OrderBy(tr => tr.Test!.Category) // تم إضافة ! هنا
+                .ThenBy(tr => tr.Test!.DisplayOrder) // تم إضافة ! هنا
                 .ToListAsync();
         }
 

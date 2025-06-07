@@ -1,0 +1,213 @@
+﻿<UserControl x:Class="OGRALAB.Views.SettingsUserControl"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:converters="clr-namespace:OGRALAB.Converters"
+             Background="#F8F9FA">
+
+    <UserControl.Resources>
+        <!-- Converters -->
+        <BooleanToVisibilityConverter x:Key="BooleanToVisibilityConverter"/>
+
+        <!-- Styles -->
+        <Style x:Key="HeaderTextStyle" TargetType="TextBlock">
+            <Setter Property="FontSize" Value="22"/>
+            <Setter Property="FontWeight" Value="Bold"/>
+            <Setter Property="Foreground" Value="#2C3E50"/>
+            <Setter Property="Margin" Value="0,10,0,20"/>
+            <Setter Property="HorizontalAlignment" Value="Center"/>
+        </Style>
+
+        <Style x:Key="SectionHeaderStyle" TargetType="TextBlock">
+            <Setter Property="FontSize" Value="16"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="Foreground" Value="#34495E"/>
+            <Setter Property="Margin" Value="0,15,0,10"/>
+        </Style>
+
+        <Style x:Key="InfoTextStyle" TargetType="TextBlock">
+            <Setter Property="FontSize" Value="12"/>
+            <Setter Property="Foreground" Value="#7F8C8D"/>
+            <Setter Property="Margin" Value="5,0,5,10"/>
+            <Setter Property="TextWrapping" Value="Wrap"/>
+        </Style>
+
+        <Style x:Key="LargeButtonStyle" TargetType="Button">
+            <Setter Property="Background" Value="#3498DB"/>
+            <Setter Property="Foreground" Value="White"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Padding" Value="30,15"/>
+            <Setter Property="Margin" Value="10"/>
+            <Setter Property="FontSize" Value="14"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="MinWidth" Value="250"/>
+            <Setter Property="MinHeight" Value="60"/>
+            <Style.Triggers>
+                <Trigger Property="IsMouseOver" Value="True">
+                    <Setter Property="Background" Value="#5DADE2"/>
+                </Trigger>
+                <Trigger Property="IsEnabled" Value="False">
+                    <Setter Property="Background" Value="#95A5A6"/>
+                    <Setter Property="Cursor" Value="Arrow"/>
+                </Trigger>
+            </Style.Triggers>
+        </Style>
+
+        <Style x:Key="AdminButtonStyle" TargetType="Button">
+            <Setter Property="Background" Value="#E74C3C"/>
+            <Setter Property="Foreground" Value="White"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Padding" Value="30,15"/>
+            <Setter Property="Margin" Value="10"/>
+            <Setter Property="FontSize" Value="14"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="MinWidth" Value="250"/>
+            <Setter Property="MinHeight" Value="60"/>
+            <Style.Triggers>
+                <Trigger Property="IsMouseOver" Value="True">
+                    <Setter Property="Background" Value="#EC7063"/>
+                </Trigger>
+                <Trigger Property="IsEnabled" Value="False">
+                    <Setter Property="Background" Value="#95A5A6"/>
+                    <Setter Property="Cursor" Value="Arrow"/>
+                </Trigger>
+            </Style.Triggers>
+        </Style>
+
+        <Style x:Key="UserInfoCardStyle" TargetType="Border">
+            <Setter Property="Background" Value="White"/>
+            <Setter Property="BorderBrush" Value="#BDC3C7"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="CornerRadius" Value="5"/>
+            <Setter Property="Padding" Value="15"/>
+            <Setter Property="Margin" Value="10"/>
+            <Setter Property="Effect">
+                <Setter.Value>
+                    <DropShadowEffect BlurRadius="5" ShadowDepth="2" Color="#7F000000" Opacity="0.3"/>
+                </Setter.Value>
+            </Setter>
+        </Style>
+    </UserControl.Resources>
+
+    <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+        <StackPanel Margin="20">
+
+            <!-- Header -->
+            <TextBlock Text="الإعدادات - Settings" Style="{StaticResource HeaderTextStyle}"/>
+
+            <!-- Current User Information -->
+            <Border Style="{StaticResource UserInfoCardStyle}">
+                <StackPanel>
+                    <TextBlock Text="معلومات المستخدم الحالي - Current User Information" 
+                              Style="{StaticResource SectionHeaderStyle}"/>
+
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                        </Grid.RowDefinitions>
+
+                        <TextBlock Grid.Row="0" Grid.Column="0" Text="اسم المستخدم: " FontWeight="Bold" Margin="0,5"/>
+                        <TextBlock Grid.Row="0" Grid.Column="1" Text="{Binding CurrentUserName}" Margin="10,5"/>
+
+                        <TextBlock Grid.Row="1" Grid.Column="0" Text="نوع الصلاحيات: " FontWeight="Bold" Margin="0,5"/>
+                        <TextBlock Grid.Row="1" Grid.Column="1" Text="{Binding CurrentUserRole}" Margin="10,5"/>
+                    </Grid>
+                </StackPanel>
+            </Border>
+
+            <!-- Management Sections -->
+            <TextBlock Text="أقسام الإدارة - Management Sections" Style="{StaticResource SectionHeaderStyle}"/>
+
+            <!-- User Management Section -->
+            <Border Style="{StaticResource UserInfoCardStyle}">
+                <StackPanel>
+                    <TextBlock Text="إدارة المستخدمين - User Management" 
+                              Style="{StaticResource SectionHeaderStyle}"/>
+
+                    <TextBlock Text="إدارة حسابات المستخدمين، الصلاحيات، وكلمات المرور" 
+                              Style="{StaticResource InfoTextStyle}"/>
+
+                    <!-- Admin Access Only Message -->
+                    <TextBlock Text="⚠️ هذا القسم متاح فقط للمسؤولين" 
+                              Foreground="#E67E22" FontWeight="Bold" Margin="5"
+                              Visibility="{Binding IsCurrentUserAdmin, Converter={StaticResource BooleanToVisibilityConverter}}"/>
+
+                    <Button Content="فتح إدارة المستخدمين&#x0D;Open User Management" 
+                           Style="{StaticResource AdminButtonStyle}"
+                           Command="{Binding OpenUserManagementCommand}"
+                           HorizontalAlignment="Center"/>
+                </StackPanel>
+            </Border>
+
+            <!-- Test Management Section -->
+            <Border Style="{StaticResource UserInfoCardStyle}">
+                <StackPanel>
+                    <TextBlock Text="إدارة التحاليل - Test Management" 
+                              Style="{StaticResource SectionHeaderStyle}"/>
+
+                    <TextBlock Text="إدارة أنواع التحاليل، الأسعار، والمعدلات الطبيعية المرنة حسب العمر والجنس" 
+                              Style="{StaticResource InfoTextStyle}"/>
+
+                    <Button Content="فتح إدارة التحاليل&#x0D;Open Test Management" 
+                           Style="{StaticResource LargeButtonStyle}"
+                           Command="{Binding OpenTestManagementCommand}"
+                           HorizontalAlignment="Center"/>
+                </StackPanel>
+            </Border>
+
+            <!-- System Information -->
+            <Border Style="{StaticResource UserInfoCardStyle}">
+                <StackPanel>
+                    <TextBlock Text="معلومات النظام - System Information" 
+                              Style="{StaticResource SectionHeaderStyle}"/>
+
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                        </Grid.RowDefinitions>
+
+                        <TextBlock Grid.Row="0" Grid.Column="0" Text="اسم البرنامج: " FontWeight="Bold" Margin="0,5"/>
+                        <TextBlock Grid.Row="0" Grid.Column="1" Text="OGRALAB - Medical Laboratory Management System" Margin="10,5"/>
+
+                        <TextBlock Grid.Row="1" Grid.Column="0" Text="الإصدار: " FontWeight="Bold" Margin="0,5"/>
+                        <TextBlock Grid.Row="1" Grid.Column="1" Text="1.0.0 (Development)" Margin="10,5"/>
+
+                        <TextBlock Grid.Row="2" Grid.Column="0" Text="قاعدة البيانات: " FontWeight="Bold" Margin="0,5"/>
+                        <TextBlock Grid.Row="2" Grid.Column="1" Text="SQLite (Local)" Margin="10,5"/>
+                    </Grid>
+                </StackPanel>
+            </Border>
+
+            <!-- Help and Tips -->
+            <Border Style="{StaticResource UserInfoCardStyle}">
+                <StackPanel>
+                    <TextBlock Text="نصائح للاستخدام - Usage Tips" 
+                              Style="{StaticResource SectionHeaderStyle}"/>
+
+                    <TextBlock Style="{StaticResource InfoTextStyle}">
+                        <Run Text="• استخدم قسم إدارة التحاليل لإضافة التحاليل المتوفرة في مختبرك"/>
+                        <LineBreak/>
+                        <Run Text="• يمكن إضافة معدلات طبيعية متعددة لكل تحليل حسب العمر والجنس"/>
+                        <LineBreak/>
+                        <Run Text="• فقط المسؤولون يمكنهم إدارة المستخدمين وصلاحياتهم"/>
+                        <LineBreak/>
+                        <Run Text="• جميع البيانات محفوظة محلياً على الجهاز"/>
+                    </TextBlock>
+                </StackPanel>
+            </Border>
+
+        </StackPanel>
+    </ScrollViewer>
+</UserControl>

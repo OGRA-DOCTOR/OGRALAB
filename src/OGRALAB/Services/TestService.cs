@@ -41,9 +41,9 @@ namespace OGRALAB.Services
         public async Task<Dictionary<string, List<Test>>> GetTestsByCategoryAsync()
         {
             var tests = await GetActiveTestsAsync();
-            
+
             return tests
-                .GroupBy(t => string.IsNullOrEmpty(t.Category) ? "عام" : t.Category)
+                .GroupBy(t => string.IsNullOrEmpty(t.Category) ? "عام" : t.Category!)
                 .ToDictionary(g => g.Key, g => g.ToList());
         }
 
@@ -62,9 +62,9 @@ namespace OGRALAB.Services
             return await _context.Tests
                 .Where(t => t.IsActive && (
                     t.TestName.ToLower().Contains(searchText) ||
-                    t.TestCode.ToLower().Contains(searchText) ||
-                    t.Abbreviation.ToLower().Contains(searchText) ||
-                    t.Category.ToLower().Contains(searchText)))
+                    (t.TestCode != null && t.TestCode.ToLower().Contains(searchText)) ||
+                    (t.Abbreviation != null && t.Abbreviation.ToLower().Contains(searchText)) ||
+                    (t.Category != null && t.Category.ToLower().Contains(searchText))))
                 .OrderBy(t => t.Category)
                 .ThenBy(t => t.TestName)
                 .ToListAsync();
@@ -89,10 +89,10 @@ namespace OGRALAB.Services
         {
             testRequest.RequestedDate = DateTime.Now;
             testRequest.Status = "Requested";
-            
+
             _context.TestRequests.Add(testRequest);
             await _context.SaveChangesAsync();
-            
+
             return testRequest;
         }
 
@@ -111,7 +111,7 @@ namespace OGRALAB.Services
 
             _context.TestRequests.AddRange(testRequests);
             await _context.SaveChangesAsync();
-            
+
             return testRequests;
         }
 
@@ -126,8 +126,8 @@ namespace OGRALAB.Services
                 .Include(tr => tr.Test)
                 .Include(tr => tr.TestResult)
                 .Where(tr => tr.PatientId == patientId)
-                .OrderBy(tr => tr.Test.Category)
-                .ThenBy(tr => tr.Test.DisplayOrder)
+                .OrderBy(tr => tr.Test!.Category) // تم إضافة ! هنا
+                .ThenBy(tr => tr.Test!.DisplayOrder) // تم إضافة ! هنا
                 .ToListAsync();
         }
 

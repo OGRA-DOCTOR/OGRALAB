@@ -27,6 +27,8 @@ namespace OGRALAB
         {
             base.OnStartup(e);
 
+            // يمكنك إلغاء التعليق عن هذا الجزء إذا كنت تستخدم SingleInstanceService
+            /*
             if (!SingleInstanceService.IsFirstInstance())
             {
                 MessageBox.Show("OGRALAB is already running.", "Application Already Running",
@@ -35,6 +37,7 @@ namespace OGRALAB
                 Current.Shutdown();
                 return;
             }
+            */
 
             try
             {
@@ -42,7 +45,8 @@ namespace OGRALAB
                 AppHost = CreateHostBuilder(configuration).Build();
                 await AppHost.StartAsync();
 
-                Current.Resources["ServiceProvider"] = AppHost.Services;
+                // إذا كنت تستخدم هذا المورد، يمكنك إبقائه
+                // Current.Resources["ServiceProvider"] = AppHost.Services;
 
                 await InitializeDatabaseAsync(AppHost.Services);
 
@@ -67,7 +71,7 @@ namespace OGRALAB
                     await AppHost.StopAsync();
                     AppHost.Dispose();
                 }
-                SingleInstanceService.ReleaseMutex();
+                // SingleInstanceService.ReleaseMutex(); // إذا كنت تستخدمه
             }
             catch (Exception ex)
             {
@@ -96,28 +100,39 @@ namespace OGRALAB
                     services.AddDbContext<OgralabDbContext>(options =>
                         options.UseSqlite(configuration.GetConnectionString("DefaultConnection")), ServiceLifetime.Scoped);
 
+                    // --- تسجيل الخدمات ---
                     services.AddScoped<IAuthenticationService, AuthenticationService>();
                     services.AddScoped<INavigationService, NavigationService>();
                     services.AddScoped<PatientService>();
                     services.AddScoped<TestService>();
                     services.AddScoped<ResultService>();
+                    // --- الخدمات الجديدة ---
+                    services.AddTransient<IUserManagementService, UserManagementService>();
+                    services.AddTransient<ITestManagementService, TestManagementService>();
 
+                    // --- تسجيل ViewModels ---
                     services.AddTransient<LoginViewModel>();
                     services.AddTransient<MainViewModel>();
                     services.AddTransient<DashboardViewModel>();
                     services.AddTransient<AddPatientViewModel>();
-                    services.AddTransient<EnterResultsViewModel>(); // ViewModel مسجل وهو المطلوب
+                    services.AddTransient<EnterResultsViewModel>();
 
+                    // --- تم تعليق تسجيل ViewModels الجديدة مؤقتًا ---
+                    // services.AddTransient<SettingsViewModel>();
+                    // services.AddTransient<UserManagementViewModel>();
+                    // services.AddTransient<TestManagementViewModel>();
+
+                    // --- تسجيل Views ---
                     services.AddTransient<LoginWindow>();
                     services.AddTransient<MainWindow>();
-                    // services.AddTransient<AddPatientWindow>(); // معلق لأنه UserControl الآن
-                    // *** تم تعليق السطر التالي لأنه سيصبح UserControl ***
-                    // services.AddTransient<EnterResultsWindow>(); 
-
                     services.AddTransient<DashboardUserControl>();
                     services.AddTransient<AddPatientUserControl>();
-                    services.AddTransient<EnterResultsUserControl>(); // *** إضافة تسجيل UserControl الجديد ***
+                    services.AddTransient<EnterResultsUserControl>();
 
+                    // --- تم تعليق تسجيل Views الجديدة مؤقتًا ---
+                    // services.AddTransient<SettingsUserControl>();
+                    // services.AddTransient<UserManagementWindow>();
+                    // services.AddTransient<TestManagementWindow>();
 
                     services.AddLogging(configure =>
                     {
