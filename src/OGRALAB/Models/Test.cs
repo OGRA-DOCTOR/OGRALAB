@@ -15,20 +15,18 @@ namespace OGRALAB.Models
         [StringLength(20)]
         public string TestCode { get; set; } = string.Empty;
 
+        // الخاصية الأساسية المحفوظة في قاعدة البيانات (يجب أن تتطابق مع الـ Migration)
         [Required]
         [StringLength(200)]
-        public string Name { get; set; } = string.Empty;
+        public string TestName { get; set; } = string.Empty;
 
-        // --- هذا هو السطر الذي تمت إضافته لحل الخطأ ---
-        // هذه الخاصية لا يتم حفظها في قاعدة البيانات، بل هي مجرد "واجهة" للوصول إلى الخاصية "Name"
-        // وهذا يحل مشكلة الأجزاء القديمة من الكود التي لا تزال تستخدم "TestName"
+        // خاصية مساعدة للوصول إلى TestName باسم Name (للتوافق مع الكود القديم)
         [NotMapped]
-        public string TestName
+        public string Name
         {
-            get { return Name; }
-            set { Name = value; }
+            get { return TestName; }
+            set { TestName = value; }
         }
-        // --------------------------------------------------
 
         [StringLength(50)]
         public string? Abbreviation { get; set; }
