@@ -42,6 +42,27 @@ namespace OGRALAB.Commands
             }
         }
 
+        /// <summary>
+        /// تنفيذ الأمر بشكل غير متزامن مع إرجاع Task
+        /// </summary>
+        public async Task ExecuteAsync()
+        {
+            if (_isExecuting) return;
+
+            _isExecuting = true;
+            RaiseCanExecuteChanged();
+
+            try
+            {
+                await _execute();
+            }
+            finally
+            {
+                _isExecuting = false;
+                RaiseCanExecuteChanged();
+            }
+        }
+
         public void RaiseCanExecuteChanged() => CommandManager.InvalidateRequerySuggested();
     }
 
@@ -75,6 +96,27 @@ namespace OGRALAB.Commands
             try
             {
                 await _execute((T?)parameter);
+            }
+            finally
+            {
+                _isExecuting = false;
+                RaiseCanExecuteChanged();
+            }
+        }
+
+        /// <summary>
+        /// تنفيذ الأمر بشكل غير متزامن مع إرجاع Task
+        /// </summary>
+        public async Task ExecuteAsync(T? parameter)
+        {
+            if (_isExecuting) return;
+
+            _isExecuting = true;
+            RaiseCanExecuteChanged();
+
+            try
+            {
+                await _execute(parameter);
             }
             finally
             {

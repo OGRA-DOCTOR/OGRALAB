@@ -24,7 +24,7 @@ namespace OGRALAB.ViewModels
             ReferenceRanges = new ObservableCollection<TestReferenceRange>();
 
             InitializeCommands();
-            LoadTestsAsync();
+            _ = LoadTestsAsync(); // Fire-and-forget pattern
         }
         #region Properties
         /// <summary>
@@ -49,7 +49,7 @@ namespace OGRALAB.ViewModels
                 if (value != null)
                 {
                     LoadTestForEditing(value);
-                    LoadReferenceRangesAsync();
+                    _ = LoadReferenceRangesAsync(); // Fire-and-forget pattern
                 }
                 else
                 {
@@ -205,16 +205,15 @@ namespace OGRALAB.ViewModels
         }
         #endregion
         #region Status Properties
-        private bool _isLoading;
         /// <summary>
-        /// حالة التحميل
+        /// حالة التحميل - تُعيد تعريف الخاصية المُورثة لتشمل تحديث حالة الأوامر
         /// </summary>
-        public bool IsLoading
+        public new bool IsLoading
         {
-            get => _isLoading;
+            get => base.IsLoading;
             set
             {
-                SetProperty(ref _isLoading, value);
+                base.IsLoading = value;
                 UpdateCommandStates();
             }
         }
@@ -657,7 +656,7 @@ namespace OGRALAB.ViewModels
             ReferenceAgeValue1 = range.AgeValue1;
             ReferenceAgeValue2 = range.AgeValue2;
             ReferenceValue = range.ReferenceValue;
-            ReferenceNotes = range.Notes;
+            ReferenceNotes = range.Notes ?? string.Empty;
         }
         /// <summary>
         /// مسح نموذج التحليل

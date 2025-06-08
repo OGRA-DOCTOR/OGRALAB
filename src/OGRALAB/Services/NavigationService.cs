@@ -54,8 +54,7 @@ namespace OGRALAB.Services
                 {
                     case "Dashboard":
                         var dashboardViewModel = _serviceProvider.GetRequiredService<DashboardViewModel>();
-                        var dashboardControl = _serviceProvider.GetRequiredService<DashboardUserControl>();
-                        dashboardControl.DataContext = dashboardViewModel;
+                        var dashboardControl = new DashboardUserControl(dashboardViewModel);
                         viewToNavigate = dashboardControl;
                         break;
                     case "AddPatient":

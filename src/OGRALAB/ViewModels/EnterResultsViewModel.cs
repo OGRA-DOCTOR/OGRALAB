@@ -323,26 +323,7 @@ namespace OGRALAB.ViewModels
         public ICommand ClearFiltersCommand { get; }
         #endregion
 
-        private bool _isLoading;
-        public bool IsLoading
-        {
-            get => _isLoading;
-            set => SetProperty(ref _isLoading, value);
-        }
-
-        private string _errorMessage = string.Empty;
-        public string ErrorMessage
-        {
-            get => _errorMessage;
-            set => SetProperty(ref _errorMessage, value);
-        }
-
-        private string _successMessage = string.Empty;
-        public string SuccessMessage
-        {
-            get => _successMessage;
-            set => SetProperty(ref _successMessage, value);
-        }
+        // تم إزالة خصائص IsLoading, ErrorMessage, SuccessMessage لأنها موجودة الآن في BaseViewModel
 
         public EnterResultsViewModel(OgralabDbContext context, PatientService patientService, ResultService resultService)
         {

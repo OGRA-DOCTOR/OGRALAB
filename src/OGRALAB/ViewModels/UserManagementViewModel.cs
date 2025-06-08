@@ -25,7 +25,7 @@ namespace OGRALAB.ViewModels
             Users = new ObservableCollection<User>();
 
             InitializeCommands();
-            LoadUsersAsync();
+            _ = LoadUsersAsync(); // Fire-and-forget pattern
         }
         #region Properties
         /// <summary>
@@ -119,16 +119,15 @@ namespace OGRALAB.ViewModels
             get => _selectedRole;
             set => SetProperty(ref _selectedRole, value);
         }
-        private bool _isLoading;
         /// <summary>
-        /// حالة التحميل
+        /// حالة التحميل - تُعيد تعريف الخاصية المُورثة لتشمل تحديث حالة الأوامر
         /// </summary>
-        public bool IsLoading
+        public new bool IsLoading
         {
-            get => _isLoading;
+            get => base.IsLoading;
             set
             {
-                SetProperty(ref _isLoading, value);
+                base.IsLoading = value;
                 UpdateCommandStates();
             }
         }
