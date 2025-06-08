@@ -2,9 +2,9 @@ name: OGRALAB Build and Test
 
 on:
   push:
-    branches: [ main, develop ]
+    branches: [ main, develop, first-base-version ]
   pull_request:
-    branches: [ main, develop ]
+    branches: [ main, develop, first-base-version ]
 
 jobs:
   build:
