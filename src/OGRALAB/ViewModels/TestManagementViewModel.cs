@@ -7,6 +7,7 @@ using System.Windows.Input;
 using OGRALAB.Models;
 using OGRALAB.Services;
 using OGRALAB.Enums;
+using OGRALAB.Views;
 namespace OGRALAB.ViewModels
 {
     /// <summary>
