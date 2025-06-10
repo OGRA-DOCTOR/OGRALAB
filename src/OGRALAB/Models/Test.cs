@@ -40,20 +40,6 @@ namespace OGRALAB.Models
         [StringLength(20)]
         public string? Unit { get; set; }
 
-        [StringLength(100)]
-        public string? NormalRangeMale { get; set; }
-
-        [StringLength(100)]
-        public string? NormalRangeFemale { get; set; }
-
-        [StringLength(100)]
-        public string? NormalRangeChildren { get; set; }
-
-        public decimal? MinNormalValue { get; set; }
-        public decimal? MaxNormalValue { get; set; }
-        public decimal? CriticalLowValue { get; set; }
-        public decimal? CriticalHighValue { get; set; }
-
         public decimal Price { get; set; }
 
         [StringLength(500)]
