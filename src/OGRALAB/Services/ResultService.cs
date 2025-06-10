@@ -101,46 +101,63 @@ namespace OGRALAB.Services
             var patient = testRequest.Patient;
 
             // تحديد المعدل الطبيعي المناسب
-            string normalRange = "";
-            decimal? minNormal = test.MinNormalValue;
-            decimal? maxNormal = test.MaxNormalValue;
+            string normalRangeDescription = "";
+            double? numericLow = null;
+            double? numericHigh = null;
+            double? criticalLow = null;
+            double? criticalHigh = null;
 
-            if (patient.AgeUnit == AgeUnit.Years && patient.Age < 18)
+            // البحث عن النطاق المرجعي المناسب بناءً على الجنس والعمر
+            var referenceRange = await _context.TestReferenceRanges
+                .Where(tr => tr.TestId == test.Id && tr.Gender == patient.Gender)
+                .ToListAsync();
+
+            // تصفية النطاقات بناءً على العمر
+            TestReferenceRange? applicableRange = null;
+            if (patient.AgeUnit == AgeUnit.Years)
             {
-                normalRange = test.NormalRangeChildren ?? "";
-            }
-            else if (patient.Gender == Gender.Male)
-            {
-                normalRange = test.NormalRangeMale ?? "";
-            }
-            else if (patient.Gender == Gender.Female)
-            {
-                normalRange = test.NormalRangeFemale ?? "";
+                applicableRange = referenceRange.FirstOrDefault(tr => tr.IsAgeInRange(patient.Age));
             }
             else
             {
-                normalRange = test.NormalRangeMale ?? "";
+                // إذا كانت وحدة العمر ليست سنوات، يمكننا افتراض نطاق عام أو التعامل معها بشكل خاص
+                // For simplicity, we'll try to find a general range (e.g., AgeValue1 = 0, AgeOperator.GreaterThanOrEqual)
+                applicableRange = referenceRange.FirstOrDefault(tr => tr.AgeValue1 == 0 && tr.AgeOperator == AgeOperator.GreaterThanOrEqual);
             }
 
-            testResult.AppliedNormalRange = normalRange;
+            if (applicableRange != null)
+            {
+                normalRangeDescription = applicableRange.ReferenceValue;
+                numericLow = applicableRange.NumericLow;
+                numericHigh = applicableRange.NumericHigh;
+                criticalLow = applicableRange.CriticalLow;
+                criticalHigh = applicableRange.CriticalHigh;
+            }
+            else
+            {
+                // في حال عدم العثور على نطاق محدد، يمكن استخدام نطاق افتراضي أو تركها فارغة
+                normalRangeDescription = "لا يوجد نطاق مرجعي محدد";
+            }
+
+            testResult.AppliedNormalRange = normalRangeDescription;
             testResult.Unit = test.Unit ?? "";
 
             // تحديد علامة الفحص إذا كانت النتيجة رقمية
-            if (testResult.NumericResult.HasValue && minNormal.HasValue && maxNormal.HasValue)
+            if (testResult.NumericResult.HasValue && numericLow.HasValue && numericHigh.HasValue)
             {
                 var value = testResult.NumericResult.Value;
 
                 // فحص القيم الحرجة أولاً
-                if ((test.CriticalLowValue.HasValue && value <= test.CriticalLowValue.Value) ||
-                    (test.CriticalHighValue.HasValue && value >= test.CriticalHighValue.Value))
+                if ((criticalLow.HasValue && value <= criticalLow.Value) ||
+                    (criticalHigh.HasValue && value >= criticalHigh.Value))
                 {
                     testResult.Flag = TestFlag.Critical;
                 }
-                else if (value < minNormal.Value)
+                else if (value < numericLow.Value)
                 {
                     testResult.Flag = TestFlag.Low;
                 }
-                else if (value > maxNormal.Value)
+                else if (value > numericHigh.Value)
                 {
                     testResult.Flag = TestFlag.High;
                 }
