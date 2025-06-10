@@ -31,6 +31,11 @@ namespace OGRALAB.Models
         [StringLength(200)]
         public string ReferenceValue { get; set; } = string.Empty;
 
+        public double? NumericLow { get; set; }
+        public double? NumericHigh { get; set; }
+        public double? CriticalLow { get; set; }
+        public double? CriticalHigh { get; set; }
+
         [StringLength(500)]
         public string? Notes { get; set; }
 
